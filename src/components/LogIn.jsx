@@ -120,11 +120,12 @@ const Login = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          timeout: 5000,
+          timeout: 15000, // Increased timeout to 15 seconds
         }
       );
 
       // Store tokens and user info
+      console.log("Login response:", response.data); // Debug log
       localStorage.setItem("access_token", response.data.access_token);
       localStorage.setItem("refresh_token", response.data.refresh_token);
       localStorage.setItem("user_id", response.data.user_id);
@@ -133,7 +134,7 @@ const Login = () => {
       if (userType === "patient") {
         // Store patient info
         localStorage.setItem("user_type", "patient");
-        localStorage.setItem("full_name", response.data.patient_info.full_name);
+        localStorage.setItem("full_name", response.data.full_name);
         
         // Navigate to patient dashboard
         navigate("/home");

@@ -7,6 +7,7 @@ import {
   BookOpen,
   Activity,
   Users,
+  UserCheck,
 } from "react-feather";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProfileDropdown from "../Navigation/ProfileDropdown";
@@ -16,6 +17,7 @@ const tabs = [
   { id: "journal", icon: <BookOpen size={20} />, label: "Journal" },
   { id: "exercises", icon: <Activity size={20} />, label: "Exercises" },
   { id: "forum", icon: <Users size={20} />, label: "Forum" },
+  { id: "specialists", icon: <UserCheck size={20} />, label: "Find Specialist" },
 ];
 
 const TopNav = ({ darkMode, setDarkMode }) => {

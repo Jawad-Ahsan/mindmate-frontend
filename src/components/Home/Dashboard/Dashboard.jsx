@@ -3,10 +3,11 @@ import ChatModule from "./ChatModule";
 import JournalModule from "./JournalModule";
 import ExercisesModule from "./ExercisesModule";
 import ForumModule from "./ForumModule";
+import SpecialistModule from "./SpecialistModule";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, Users, MessageSquare } from "react-feather";
+import { BookOpen, Heart, Users, MessageSquare, UserCheck } from "react-feather";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -52,6 +53,8 @@ const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
         return <ExercisesModule darkMode={darkMode} />;
       case "forum":
         return <ForumModule darkMode={darkMode} />;
+      case "specialists":
+        return <SpecialistModule darkMode={darkMode} />;
       default:
         return null;
     }
@@ -67,6 +70,8 @@ const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
         return <Heart className="h-5 w-5" />;
       case "forum":
         return <Users className="h-5 w-5" />;
+      case "specialists":
+        return <UserCheck className="h-5 w-5" />;
       default:
         return null;
     }
@@ -82,6 +87,8 @@ const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
         return "Wellness Exercises";
       case "forum":
         return "Community Forum";
+      case "specialists":
+        return "Find Specialist";
       default:
         return "";
     }
@@ -95,68 +102,6 @@ const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
           : "bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
       }`}
     >
-      {/* Enhanced Header with Tab Navigation */}
-      <div className={`px-6 py-4 ${
-        darkMode 
-          ? "bg-gray-800/80 backdrop-blur-sm border-b border-gray-700" 
-          : "bg-white/80 backdrop-blur-sm border-b border-gray-200"
-      }`}>
-        <div className="flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3"
-          >
-            <div className={`p-2 rounded-lg ${
-              darkMode 
-                ? "bg-gradient-to-r from-indigo-500 to-purple-600" 
-                : "bg-gradient-to-r from-blue-500 to-indigo-600"
-            }`}>
-              <BookOpen className={`h-6 w-6 ${
-                darkMode ? "text-white" : "text-white"
-              }`} />
-            </div>
-            <div>
-              <h1 className={`text-xl font-bold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}>
-                MindMate Dashboard
-              </h1>
-              <p className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}>
-                Your mental wellness journey starts here
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Tab Indicators */}
-          <div className="flex items-center space-x-1">
-            {["chat", "journal", "exercises", "forum"].map((tab) => (
-              <motion.div
-                key={tab}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  activeTab === tab
-                    ? darkMode
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
-                      : "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25"
-                    : darkMode
-                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                }`}
-              >
-                {getTabIcon(tab)}
-                <span className="text-sm font-medium hidden sm:inline">
-                  {getTabLabel(tab)}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Area */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
