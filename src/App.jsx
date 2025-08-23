@@ -11,6 +11,7 @@ import DevTeam from "./components/DevTeam";
 import OAuthSuccess from "./components/OAuthSuccess";
 import AdminDashboard from "./components/AdminDashboard";
 import SpecialistDashboard from "./components/SpecialistDashboard";
+import SpecialistCompleteProfile from "./components/SpecialistCompleteProfile";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/specialist" element={<SpecialistDashboard />} />
+        <Route path="/specialist-complete-profile" element={<SpecialistCompleteProfile />} />
       </Routes>
     </Router>
   );

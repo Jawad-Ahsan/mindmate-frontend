@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Mic, Send } from "react-feather";
+import { Plus, Mic, Send, MessageSquare } from "react-feather";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -119,24 +119,32 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
   return (
     <div
       className={`w-full h-full flex flex-col ${
-        darkMode ? "bg-gray-900" : "bg-gray-50"
+        darkMode ? "bg-transparent" : "bg-transparent"
       }`}
     >
       <div
-        className={`flex-1 overflow-y-auto p-4 space-y-4 ${
-          darkMode ? "bg-gray-900" : "bg-gray-50"
+        className={`flex-1 overflow-y-auto p-6 space-y-4 ${
+          darkMode ? "bg-transparent" : "bg-transparent"
         }`}
       >
         <AnimatePresence initial={false}>
           {messages.length === 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className={`text-center p-8 ${
-                darkMode ? "text-gray-500" : "text-gray-400"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`text-center p-12 ${
+                darkMode ? "text-gray-400" : "text-gray-500"
               }`}
             >
-              <p>Start a new conversation with MindMate</p>
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
+                darkMode ? "bg-gray-800/50" : "bg-white/50"
+              }`}>
+                <MessageSquare className={`h-10 w-10 ${
+                  darkMode ? "text-indigo-400" : "text-indigo-500"
+                }`} />
+              </div>
+              <p className="text-lg font-medium mb-2">Start a new conversation</p>
+              <p className="text-sm opacity-75">Share your thoughts with MindMate AI</p>
             </motion.div>
           )}
 
@@ -146,16 +154,16 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl break-words shadow
+              className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl break-words shadow-lg backdrop-blur-sm
                 ${
                   m.sender === "user"
                     ? darkMode
-                      ? "bg-blue-600 text-white self-end rounded-l-lg rounded-br-lg"
-                      : "bg-blue-500 text-white self-end rounded-l-lg rounded-br-lg"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white self-end rounded-2xl rounded-br-md"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white self-end rounded-2xl rounded-br-md"
                     : darkMode
-                    ? "bg-gray-800 text-gray-200 rounded-r-lg rounded-bl-lg"
-                    : "bg-white text-gray-800 rounded-r-lg rounded-bl-lg"
-                } p-3`}
+                    ? "bg-gray-800/80 border border-gray-700 text-gray-200 rounded-2xl rounded-bl-md"
+                    : "bg-white/80 border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md"
+                } p-4`}
             >
               {m.text}
             </motion.div>
@@ -179,18 +187,18 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
       </div>
 
       <div
-        className={`p-4 ${darkMode ? "bg-gray-800" : "bg-white"} border-t ${
+        className={`p-6 ${darkMode ? "bg-gray-800/80 backdrop-blur-sm" : "bg-white/80 backdrop-blur-sm"} border-t ${
           darkMode ? "border-gray-700" : "border-gray-200"
         }`}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${
+            className={`w-12 h-12 flex-shrink-0 rounded-xl flex items-center justify-center ${
               darkMode
-                ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                ? "bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-gray-300"
+                : "bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-600"
             }`}
           >
             <Plus size={20} />
@@ -202,16 +210,14 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             placeholder="Type your message…"
-            className={`flex-1 px-4 py-2.5 rounded-full ${
+            className={`flex-1 px-6 py-3 rounded-2xl border-2 transition-all duration-200 ${
               darkMode
-                ? "bg-gray-700 text-white placeholder-gray-400"
-                : "bg-gray-100 text-gray-800 placeholder-gray-500"
-            } focus:outline-none focus:ring-2 ${
-              darkMode ? "focus:ring-blue-500" : "focus:ring-blue-400"
-            }`}
+                ? "bg-gray-700/80 text-white placeholder-gray-400 border-gray-600 focus:border-blue-400"
+                : "bg-gray-100/80 text-gray-800 placeholder-gray-500 border-gray-300 focus:border-blue-400"
+            } focus:outline-none focus:ring-2 focus:ring-blue-400/20`}
           />
 
-          <div className="relative w-10 h-10 flex-shrink-0">
+          <div className="relative w-12 h-12 flex-shrink-0">
             <AnimatePresence>
               {showSendButton ? (
                 <motion.button
@@ -222,11 +228,11 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={handleSendMessage}
-                  className={`absolute inset-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  className={`absolute inset-0 w-12 h-12 rounded-xl flex items-center justify-center ${
                     darkMode
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-blue-500 hover:bg-blue-600"
-                  } text-white`}
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                  } text-white shadow-lg`}
                 >
                   <Send size={18} />
                 </motion.button>
@@ -238,11 +244,11 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
                   exit={{ scale: 0, opacity: 0 }}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className={`absolute inset-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  className={`absolute inset-0 w-12 h-12 rounded-xl flex items-center justify-center ${
                     darkMode
-                      ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                  }`}
+                      ? "bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500"
+                      : "bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400"
+                  } text-gray-600`}
                 >
                   <Mic size={18} />
                 </motion.button>

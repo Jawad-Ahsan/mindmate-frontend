@@ -106,7 +106,7 @@ const OTP = () => {
         } else {
           // Navigate based on user type
           if (userType === "specialist") {
-            navigate("/home"); // Specialist goes to home after verification
+            navigate("/login"); // Specialist goes to login after verification to complete profile
           } else {
             navigate("/mandatory-questionnaire"); // Patient goes to questionnaire
           }

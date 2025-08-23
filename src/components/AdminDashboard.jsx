@@ -17,7 +17,9 @@ import {
   Clock,
   Award,
   Sun,
-  Moon
+  Moon,
+  FileText,
+  Globe
 } from "react-feather";
 import { Modal } from "./Modal";
 
@@ -175,6 +177,71 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSuspendSpecialist = async (specialistId) => {
+    if (!window.confirm("Are you sure you want to suspend this specialist?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.post(`${API_URL}/api/admin/specialists/${specialistId}/suspend`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update specialist status in list
+      setSpecialists(specialists.map(specialist => 
+        specialist.id === specialistId 
+          ? { ...specialist, approval_status: "suspended" }
+          : specialist
+      ));
+    } catch (error) {
+      console.error("Error suspending specialist:", error);
+      setError("Failed to suspend specialist");
+    }
+  };
+
+  const handleUnsuspendSpecialist = async (specialistId) => {
+    if (!window.confirm("Are you sure you want to unsuspend this specialist?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.post(`${API_URL}/api/admin/specialists/${specialistId}/unsuspend`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update specialist status in list
+      setSpecialists(specialists.map(specialist => 
+        specialist.id === specialistId 
+          ? { ...specialist, approval_status: "approved" }
+          : specialist
+      ));
+    } catch (error) {
+      console.error("Error unsuspending specialist:", error);
+      setError("Failed to unsuspend specialist");
+    }
+  };
+
+  const handleDeleteSpecialist = async (specialistId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this specialist? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.delete(`${API_URL}/api/admin/specialists/${specialistId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Remove specialist from list
+      setSpecialists(specialists.filter(specialist => specialist.id !== specialistId));
+    } catch (error) {
+      console.error("Error deleting specialist:", error);
+      setError("Failed to delete specialist");
+    }
+  };
+
   const handleReportAction = async (reportId, action) => {
     const actionText = action === "keep" ? "resolve" : "remove";
     if (!window.confirm(`Are you sure you want to ${actionText} this report?`)) {
@@ -226,16 +293,23 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
-      {/* Header */}
-      <header className={`border-b ${darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
+    <div className={`min-h-screen ${darkMode ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white" : "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900"}`}>
+      {/* Enhanced Header */}
+      <header className={`border-b backdrop-blur-sm ${darkMode ? "border-gray-700 bg-gray-800/90" : "border-gray-200 bg-white/90"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <Users className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
-              <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                Admin Dashboard
-              </h1>
+              <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-indigo-500 to-purple-600" : "bg-gradient-to-r from-blue-500 to-indigo-600"}`}>
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Admin Dashboard
+                </h1>
+                <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  Manage your MindMate platform
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {adminInfo && (
@@ -272,13 +346,14 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
+        {/* Enhanced Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
               <Users className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
@@ -292,13 +367,16 @@ const AdminDashboard = () => {
           </motion.div>
           
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <User className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-green-400 to-emerald-500"}`}>
+                <User className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Total Specialists
@@ -309,13 +387,16 @@ const AdminDashboard = () => {
           </motion.div>
           
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <Clock className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-yellow-500 to-orange-600" : "bg-gradient-to-r from-yellow-400 to-orange-500"}`}>
+                <Clock className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Pending Approvals
@@ -328,13 +409,16 @@ const AdminDashboard = () => {
           </motion.div>
           
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <AlertCircle className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-red-500 to-pink-600" : "bg-gradient-to-r from-red-400 to-pink-500"}`}>
+                <AlertCircle className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Pending Reports
@@ -585,6 +669,11 @@ const AdminDashboard = () => {
                       <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       }`}>
+                        Specializations & Documents
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        darkMode ? "text-gray-300" : "text-gray-500"
+                      }`}>
                         Status
                       </th>
                       <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
@@ -663,6 +752,96 @@ const AdminDashboard = () => {
                                 </span>
                               </div>
                             )}
+                            {specialist.address && (
+                              <div className="flex items-center text-sm">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                                <span className={darkMode ? "text-gray-300" : "text-gray-900"}>
+                                  {specialist.address}
+                                </span>
+                              </div>
+                            )}
+                            {specialist.clinic_name && (
+                              <div className="flex items-center text-sm">
+                                <Award className="h-4 w-4 mr-2 text-gray-400" />
+                                <span className={darkMode ? "text-gray-300" : "text-gray-900"}>
+                                  {specialist.clinic_name}
+                                </span>
+                              </div>
+                            )}
+                            {specialist.consultation_fee && (
+                              <div className="flex items-center text-sm">
+                                <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                                <span className={darkMode ? "text-gray-300" : "text-gray-900"}>
+                                  PKR {specialist.consultation_fee}
+                                </span>
+                              </div>
+                            )}
+                            {specialist.bio && (
+                              <div className="flex items-start text-sm mt-2">
+                                <FileText className="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0" />
+                                <span className={darkMode ? "text-gray-300" : "text-gray-900"} title={specialist.bio}>
+                                  {specialist.bio.length > 100 ? specialist.bio.substring(0, 100) + '...' : specialist.bio}
+                                </span>
+                              </div>
+                            )}
+                            {specialist.languages_spoken && specialist.languages_spoken.length > 0 && (
+                              <div className="flex items-center text-sm mt-2">
+                                <Globe className="h-4 w-4 mr-2 text-gray-400" />
+                                <span className={darkMode ? "text-gray-300" : "text-gray-900"}>
+                                  Languages: {specialist.languages_spoken.join(', ')}
+                                </span>
+                              </div>
+                            )}
+                            {specialist.website_url && (
+                              <div className="flex items-center text-sm mt-2">
+                                <Globe className="h-4 w-4 mr-2 text-gray-400" />
+                                <a 
+                                  href={specialist.website_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className={`${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"} underline`}
+                                >
+                                  Website
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            {/* Specializations */}
+                            {specialist.specializations && specialist.specializations.length > 0 && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-500 mb-1">Specializations:</div>
+                                {specialist.specializations.map((spec, idx) => (
+                                  <div key={idx} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                    {spec.specialization?.replace('_', ' ') || 'N/A'} 
+                                    ({spec.years_of_experience_in_specialization} years)
+                                    {spec.is_primary_specialization && ' - Primary'}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Documents */}
+                            {specialist.documents && specialist.documents.length > 0 && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-500 mb-1">Documents:</div>
+                                {specialist.documents.map((doc, idx) => (
+                                  <div key={idx} className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                                    {doc.document_name} ({doc.document_type || 'N/A'})
+                                    <div className="text-xs text-gray-500">
+                                      Status: {doc.verification_status || 'Pending'}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {(!specialist.specializations || specialist.specializations.length === 0) && 
+                             (!specialist.documents || specialist.documents.length === 0) && (
+                              <div className="text-xs text-gray-500 italic">No data available</div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -714,11 +893,64 @@ const AdminDashboard = () => {
                               </>
                             )}
                             {specialist.approval_status === "approved" && (
-                              <span className={`px-3 py-2 rounded-lg ${
-                                darkMode ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-800"
-                              }`}>
-                                Approved
-                              </span>
+                              <>
+                                <span className={`px-3 py-2 rounded-lg ${
+                                  darkMode ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-800"
+                                }`}>
+                                  Approved
+                                </span>
+                                <button
+                                  onClick={() => handleSuspendSpecialist(specialist.id)}
+                                  className={`flex items-center space-x2 px-3 py-2 rounded-lg ${
+                                    darkMode
+                                      ? "bg-yellow-600 hover:bg-yellow-700 text-white"
+                                      : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                  }`}
+                                >
+                                  <AlertCircle className="h-4 w-4" />
+                                  <span>Suspend</span>
+                                </button>
+                              </>
+                            )}
+                            {specialist.approval_status === "suspended" && (
+                              <>
+                                <span className={`px-3 py-2 rounded-lg ${
+                                  darkMode ? "bg-yellow-900/30 text-yellow-300" : "bg-yellow-100 text-yellow-800"
+                                }`}>
+                                  Suspended
+                                </span>
+                                <button
+                                  onClick={() => handleUnsuspendSpecialist(specialist.id)}
+                                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+                                    darkMode
+                                      ? "bg-green-600 hover:bg-green-700 text-white"
+                                      : "bg-green-500 hover:bg-green-600 text-white"
+                                  }`}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Unsuspend</span>
+                                </button>
+                              </>
+                            )}
+                            {specialist.approval_status === "rejected" && (
+                              <>
+                                <span className={`px-3 py-2 rounded-lg ${
+                                  darkMode ? "bg-red-900/30 text-red-300" : "bg-red-100 text-red-800"
+                                }`}>
+                                  Rejected
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteSpecialist(specialist.id)}
+                                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+                                    darkMode
+                                      ? "bg-red-600 hover:bg-red-700 text-white"
+                                      : "bg-red-500 hover:bg-red-600 text-white"
+                                  }`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
+import { Users } from "react-feather";
 
 const ForumModule = ({ darkMode }) => {
   const [questions, setQuestions] = useState([]);
@@ -284,25 +285,35 @@ const ForumModule = ({ darkMode }) => {
   };
 
   return (
-    <div className={`h-full overflow-y-auto p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
+    <div className={`h-full overflow-y-auto p-6 ${darkMode ? "bg-transparent text-white" : "bg-transparent text-gray-900"}`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        {/* Header */}
+        {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`p-6 rounded-xl shadow-lg ${
-            darkMode ? "bg-gray-800" : "bg-white"
+          className={`p-8 rounded-2xl shadow-xl backdrop-blur-sm ${
+            darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
           }`}
         >
-          <div className="flex justify-between items-center mb-6">
-            <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-              Forum
-            </h1>
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center space-x-4">
+              <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-blue-500 to-indigo-600" : "bg-gradient-to-r from-blue-400 to-indigo-500"}`}>
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Community Forum
+                </h1>
+                <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  Connect with others on your wellness journey
+                </p>
+              </div>
+            </div>
             
             {/* Category Filter */}
             <div className="flex items-center space-x-4">
@@ -435,8 +446,9 @@ const ForumModule = ({ darkMode }) => {
                 key={question.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-6 rounded-xl shadow-lg cursor-pointer transition-all hover:shadow-xl ${
-                  darkMode ? "bg-gray-800 hover:bg-gray-750" : "bg-white hover:bg-gray-50"
+                whileHover={{ y: -5, scale: 1.01 }}
+                className={`p-6 rounded-2xl shadow-lg cursor-pointer transition-all duration-300 backdrop-blur-sm ${
+                  darkMode ? "bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700" : "bg-white/80 hover:bg-gray-50/80 border border-gray-200"
                 }`}
                 onClick={() => handleViewQuestion(question)}
               >

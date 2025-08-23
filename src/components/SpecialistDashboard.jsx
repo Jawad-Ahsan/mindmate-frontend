@@ -128,16 +128,23 @@ const SpecialistDashboard = () => {
   }
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
-      {/* Header */}
-      <header className={`border-b ${darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
+    <div className={`min-h-screen ${darkMode ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white" : "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 text-gray-900"}`}>
+      {/* Enhanced Header */}
+      <header className={`border-b backdrop-blur-sm ${darkMode ? "border-gray-700 bg-gray-800/90" : "border-gray-200 bg-white/90"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <Award className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
-              <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                Specialist Dashboard
-              </h1>
+              <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-emerald-500 to-teal-600" : "bg-gradient-to-r from-emerald-400 to-teal-500"}`}>
+                <Award className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Specialist Dashboard
+                </h1>
+                <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  Professional mental health support
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {specialistInfo && (
@@ -174,37 +181,45 @@ const SpecialistDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className={`mb-8 p-6 rounded-lg shadow ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        }`}>
-          <div className="flex items-center space-x-4">
-            <div className={`p-3 rounded-full ${
-              darkMode ? "bg-indigo-600" : "bg-indigo-100"
-            }`}>
-              <Award className={`h-8 w-8 ${darkMode ? "text-white" : "text-indigo-600"}`} />
+        {/* Enhanced Welcome Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`mb-8 p-8 rounded-2xl shadow-xl backdrop-blur-sm ${
+            darkMode ? "bg-gradient-to-r from-gray-800 to-gray-700 border border-gray-600" : "bg-gradient-to-r from-white to-gray-50 border border-gray-200"
+          }`}
+        >
+          <div className="flex items-center space-x-6">
+            <div className={`p-4 rounded-2xl ${darkMode ? "bg-gradient-to-r from-emerald-500 to-teal-600" : "bg-gradient-to-r from-emerald-400 to-teal-500"}`}>
+              <Award className="h-10 w-10 text-white" />
             </div>
             <div>
-              <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                Welcome back, {specialistInfo?.first_name}!
+              <h2 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                Welcome back, {specialistInfo?.first_name}! 👋
               </h2>
-              <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                You are logged in as a {specialistInfo?.specialist_type?.replace('_', ' ')} specialist.
+              <p className={`text-lg ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                You are logged in as a <span className="font-semibold text-emerald-600">{specialistInfo?.specialist_type?.replace('_', ' ')}</span> specialist.
+              </p>
+              <p className={`text-sm mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                Ready to help patients on their mental wellness journey
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <Users className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-blue-500 to-indigo-600" : "bg-gradient-to-r from-blue-400 to-indigo-500"}`}>
+                <Users className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Total Patients
@@ -215,13 +230,16 @@ const SpecialistDashboard = () => {
           </motion.div>
 
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <MessageSquare className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-green-400 to-emerald-500"}`}>
+                <MessageSquare className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Active Sessions
@@ -232,13 +250,16 @@ const SpecialistDashboard = () => {
           </motion.div>
 
           <motion.div
-            className={`p-6 rounded-lg shadow ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`p-6 rounded-xl shadow-lg backdrop-blur-sm ${
+              darkMode ? "bg-gray-800/80 border border-gray-700" : "bg-white/80 border border-gray-200"
             }`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <FileText className={`h-8 w-8 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-purple-500 to-pink-600" : "bg-gradient-to-r from-purple-400 to-pink-500"}`}>
+                <FileText className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   Completed Sessions

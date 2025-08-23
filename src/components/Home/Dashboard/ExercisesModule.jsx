@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Heart } from "react-feather";
 
 const exercises = [
   {
@@ -35,27 +36,37 @@ const ExercisesModule = ({ darkMode }) => {
   return (
     <div
       className={`p-6 h-full overflow-auto ${
-        darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+        darkMode ? "bg-transparent text-gray-100" : "bg-transparent text-gray-900"
       }`}
     >
-      <h2
-        className={`text-2xl font-bold mb-6 ${
-          darkMode ? "text-white" : "text-gray-900"
-        }`}
-      >
-        Mental Health Exercises
-      </h2>
+      <div className="flex items-center space-x-3 mb-8">
+        <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-green-400 to-emerald-500"}`}>
+          <Heart className="h-8 w-8 text-white" />
+        </div>
+        <div>
+          <h2
+            className={`text-3xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Wellness Exercises
+          </h2>
+          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            Practice mindfulness and mental wellness
+          </p>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {exercises.map((exercise) => (
           <motion.div
             key={exercise.id}
-            whileHover={{ y: -5 }}
+            whileHover={{ y: -8, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`p-6 rounded-xl ${
+            className={`p-6 rounded-2xl backdrop-blur-sm cursor-pointer transition-all duration-300 ${
               darkMode
-                ? "bg-gray-800 hover:bg-gray-700"
-                : "bg-white hover:bg-gray-50"
-            } shadow-md cursor-pointer transition-all duration-200`}
+                ? "bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700"
+                : "bg-white/80 hover:bg-gray-50/80 border border-gray-200"
+            } shadow-lg hover:shadow-xl`}
           >
             <div
               className={`w-14 h-14 rounded-2xl ${

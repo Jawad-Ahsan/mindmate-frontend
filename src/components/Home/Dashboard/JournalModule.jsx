@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
+import { BookOpen } from "react-feather";
 
 const JournalModule = ({ darkMode }) => {
   const [entries, setEntries] = useState([]);
@@ -98,17 +99,27 @@ const JournalModule = ({ darkMode }) => {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div
-        className={`p-4 border-b ${
-          darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
+        className={`p-6 border-b ${
+          darkMode ? "border-gray-700 bg-gray-800/80 backdrop-blur-sm" : "border-gray-200 bg-white/80 backdrop-blur-sm"
         }`}
       >
-        <h2
-          className={`text-xl font-bold ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Daily Journal
-        </h2>
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${darkMode ? "bg-gradient-to-r from-purple-500 to-pink-600" : "bg-gradient-to-r from-purple-400 to-pink-500"}`}>
+            <BookOpen className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2
+              className={`text-2xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Daily Journal
+            </h2>
+            <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+              Reflect on your thoughts and feelings
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Editor */}
@@ -121,17 +132,11 @@ const JournalModule = ({ darkMode }) => {
           value={newEntry}
           onChange={(e) => setNewEntry(e.target.value)}
           placeholder="Write your thoughts here..."
-          className={`w-full h-40 px-4 py-3 rounded-lg mb-4 ${
+          className={`w-full h-40 px-6 py-4 rounded-2xl mb-6 transition-all duration-200 ${
             darkMode
-              ? "bg-gray-700 text-white placeholder-gray-400"
-              : "bg-white text-gray-800 placeholder-gray-500"
-          } border ${
-            darkMode
-              ? "border-gray-600 focus:border-blue-500"
-              : "border-gray-300 focus:border-blue-400"
-          } focus:outline-none focus:ring-1 ${
-            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-400"
-          }`}
+              ? "bg-gray-700/80 text-white placeholder-gray-400 border-2 border-gray-600 focus:border-purple-400"
+              : "bg-white/80 text-gray-800 placeholder-gray-500 border-2 border-gray-300 focus:border-purple-400"
+          } focus:outline-none focus:ring-2 focus:ring-purple-400/20`}
         />
         
         {/* Mood and Tags */}
@@ -173,14 +178,14 @@ const JournalModule = ({ darkMode }) => {
         </div>
         
         <motion.button
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleSaveEntry}
           disabled={loading}
-          className={`px-6 py-3 rounded-md font-medium ${
+          className={`px-8 py-4 rounded-2xl font-medium shadow-lg transition-all duration-200 ${
             darkMode
-              ? "bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600"
-              : "bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+              ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700"
+              : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-400 disabled:to-gray-500"
           } text-white disabled:cursor-not-allowed`}
         >
           {loading ? "Saving..." : "Save Entry"}

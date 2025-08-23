@@ -13,6 +13,7 @@ import {
 } from "react-feather";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const Login = () => {
@@ -102,74 +103,105 @@ const Login = () => {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    setErrors({ ...errors, form: "" });
+    setErrors({ email: "", password: "", secretKey: "", form: "" });
 
     try {
-      const requestData = {
-        email,
-        password,
+      const loginData = {
+        email: email.trim(),
+        password: password,
         user_type: userType,
+        ...(userType === "admin" && { secret_key: secretKey }),
       };
-
-      // Add secret key for admin login
-      if (userType === "admin") {
-        requestData.secret_key = secretKey;
-      }
 
       const response = await axios.post(
         `${API_URL}/api/auth/login-user`,
-        requestData,
+        loginData,
         {
           headers: {
             "Content-Type": "application/json",
           },
+          timeout: 5000,
         }
       );
-      // Verify token exists in response
-      if (!response.data?.access_token) {
-        throw new Error("No access token received");
-      }
 
-      // Store authentication data
+      // Store tokens and user info
       localStorage.setItem("access_token", response.data.access_token);
+      localStorage.setItem("refresh_token", response.data.refresh_token);
       localStorage.setItem("user_id", response.data.user_id);
 
-      // Verify token storage
-      console.log("Stored token:", localStorage.getItem("access_token"));
-
-      // Navigate based on user type
-      if (userType === "admin") {
-        navigate("/admin");
-      } else if (userType === "specialist") {
-        navigate("/specialist");
-      } else {
+      // Handle different user types
+      if (userType === "patient") {
+        // Store patient info
+        localStorage.setItem("user_type", "patient");
+        localStorage.setItem("full_name", response.data.patient_info.full_name);
+        
+        // Navigate to patient dashboard
         navigate("/home");
+      } else if (userType === "specialist") {
+        // Store specialist info
+        localStorage.setItem("user_type", "specialist");
+        localStorage.setItem("full_name", response.data.full_name);
+        localStorage.setItem("approval_status", response.data.approval_status);
+        localStorage.setItem("profile_complete", response.data.profile_complete);
+        
+        // Check if specialist needs to complete profile
+        if (!response.data.profile_complete) {
+          navigate("/specialist-complete-profile");
+        } else if (response.data.approval_status === "pending" || response.data.approval_status === "under_review") {
+          // Show pending approval message
+          toast(response.data.status_message || "Your application is pending approval", {
+            icon: '⏳',
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
+          });
+          navigate("/specialist-complete-profile");
+        } else if (response.data.approval_status === "approved") {
+          // Navigate to specialist dashboard
+          navigate("/specialist");
+        } else if (response.data.approval_status === "suspended") {
+          toast.error("Your account has been suspended. Please contact support.");
+          return;
+        } else {
+          // Default fallback
+          navigate("/specialist-complete-profile");
+        }
+      } else if (userType === "admin") {
+        // Store admin info
+        localStorage.setItem("user_type", "admin");
+        localStorage.setItem("full_name", response.data.full_name);
+        localStorage.setItem("role", response.data.role);
+        
+        // Navigate to admin dashboard
+        navigate("/admin");
       }
+
+      // Show success message
+      toast.success(`Welcome back, ${response.data.full_name}!`);
+
     } catch (error) {
       console.error("Login error:", error);
-
+      
       if (error.response) {
-        if (error.response.status === 401) {
-          setErrors({
-            ...errors,
-            form: "Invalid email or password",
-          });
+        const errorDetail = error.response.data.detail;
+        
+        if (errorDetail.includes("suspended")) {
+          setErrors({ form: "Your account has been suspended. Please contact support." });
+        } else if (errorDetail.includes("verification")) {
+          setErrors({ form: "Please verify your email before logging in." });
+        } else if (errorDetail.includes("approval")) {
+          setErrors({ form: "Your account is pending approval. Please wait for admin approval." });
+        } else if (errorDetail.includes("Invalid email or password")) {
+          setErrors({ form: "Invalid email or password. Please try again." });
         } else {
-          setErrors({
-            ...errors,
-            form: "An error occurred. Please try again.",
-          });
+          setErrors({ form: errorDetail || "Login failed. Please try again." });
         }
       } else if (error.request) {
-        setErrors({
-          ...errors,
-          form: "Network error. Please check your connection.",
-        });
+        setErrors({ form: "Network error. Please check your connection." });
       } else {
-        setErrors({
-          ...errors,
-          form: "An unexpected error occurred.",
-        });
+        setErrors({ form: "An unexpected error occurred." });
       }
     } finally {
       setIsSubmitting(false);

@@ -27,12 +27,8 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    // Specialist-specific fields
-    phone: "",
-    city: "",
-    specialistType: "",
-    yearsExperience: "",
-    licenseNumber: "",
+    acceptsTermsAndConditions: false, // Added terms acceptance
+    // Specialist-specific fields - REMOVED
   });
 
   // User type toggle (patient | specialist)
@@ -47,13 +43,9 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    acceptsTermsAndConditions: "", // Added terms error
     form: "",
-    // Specialist-specific errors
-    phone: "",
-    city: "",
-    specialistType: "",
-    yearsExperience: "",
-    licenseNumber: "",
+    // Specialist-specific errors - REMOVED
   });
 
   // UI state
@@ -64,12 +56,21 @@ const Signup = () => {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize dark mode
+  // Initialize dark mode and reset form when user type changes
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode") === "true";
     setDarkMode(savedMode);
     document.body.className = savedMode ? "dark" : "light";
-  }, []);
+    
+    // Reset form data when user type changes
+    if (userType === "specialist") {
+      setFormData(prev => ({
+        ...prev,
+        dateOfBirth: "",
+        gender: ""
+      }));
+    }
+  }, [userType]);
 
   // Toggle dark mode
   const toggleDarkMode = () => {
@@ -77,6 +78,59 @@ const Signup = () => {
     setDarkMode(newMode);
     localStorage.setItem("darkMode", newMode.toString());
     document.body.className = newMode ? "dark" : "light";
+  };
+
+  // Handle user type change and clear relevant fields
+  const handleUserTypeChange = (newUserType) => {
+    console.log("DEBUG: Switching user type from", userType, "to", newUserType);
+    console.log("DEBUG: Current formData before switch:", formData);
+    
+    setUserType(newUserType);
+    
+            // Clear specialist-specific fields when switching to specialist
+        if (newUserType === "specialist") {
+          const newFormData = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+            acceptsTermsAndConditions: formData.acceptsTermsAndConditions, // Keep terms acceptance
+            // Clear patient-specific fields
+            dateOfBirth: "",
+            gender: ""
+          };
+          console.log("DEBUG: New formData for specialist:", newFormData);
+          
+          setFormData(newFormData);
+          setErrors(prev => ({
+            ...prev,
+            dateOfBirth: "",
+            gender: ""
+          }));
+        } else if (newUserType === "patient") {
+          // Clear specialist-specific fields when switching to patient
+          const newFormData = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+            acceptsTermsAndConditions: formData.acceptsTermsAndConditions, // Keep terms acceptance
+            // Keep patient fields as they are
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender
+          };
+          console.log("DEBUG: New formData for patient:", newFormData);
+          
+          setFormData(newFormData);
+        }
+    
+    // Clear any existing form errors
+    setErrors(prev => ({
+      ...prev,
+      form: ""
+    }));
   };
 
   // Animation variants
@@ -119,12 +173,7 @@ const Signup = () => {
       password: "",
       confirmPassword: "",
       form: "",
-      // Specialist-specific errors
-      phone: "",
-      city: "",
-      specialistType: "",
-      yearsExperience: "",
-      licenseNumber: "",
+      // Specialist-specific errors - REMOVED
     };
     let isValid = true;
 
@@ -146,7 +195,8 @@ const Signup = () => {
       isValid = false;
     }
 
-    // Date of birth validation
+    // Date of birth validation - ONLY for patients
+    if (userType === "patient") {
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = "Date of birth is required";
       isValid = false;
@@ -164,10 +214,11 @@ const Signup = () => {
       }
     }
 
-    // Gender validation
+      // Gender validation - ONLY for patients
     if (!formData.gender) {
       newErrors.gender = "Gender is required";
       isValid = false;
+      }
     }
 
     // Email validation
@@ -197,44 +248,13 @@ const Signup = () => {
       isValid = false;
     }
 
-    // Specialist-specific validation
-    if (userType === "specialist") {
-      // Phone validation
-      if (!formData.phone) {
-        newErrors.phone = "Phone number is required";
-        isValid = false;
-      } else if (!/^\+?92[0-9]{10}$/.test(formData.phone.replace(/\s/g, '').replace(/-/g, ''))) {
-        newErrors.phone = "Phone must be in Pakistani format: +92XXXXXXXXXX";
-        isValid = false;
-      }
-
-      // City validation
-      if (!formData.city) {
-        newErrors.city = "City is required";
-        isValid = false;
-      }
-
-      // Specialist type validation
-      if (!formData.specialistType) {
-        newErrors.specialistType = "Specialist type is required";
-        isValid = false;
-      }
-
-      // Years experience validation
-      if (!formData.yearsExperience) {
-        newErrors.yearsExperience = "Years of experience is required";
-        isValid = false;
-      } else if (parseInt(formData.yearsExperience) < 0 || parseInt(formData.yearsExperience) > 60) {
-        newErrors.yearsExperience = "Years of experience must be between 0 and 60";
-        isValid = false;
-      }
-
-      // License number validation
-      if (!formData.licenseNumber) {
-        newErrors.licenseNumber = "License number is required";
-        isValid = false;
-      }
+    // Terms and conditions validation
+    if (!formData.acceptsTermsAndConditions) {
+      newErrors.acceptsTermsAndConditions = "You must accept the terms and conditions";
+      isValid = false;
     }
+
+    // Specialist-specific validation - REMOVED
 
     setErrors(newErrors);
     return isValid;
@@ -269,7 +289,7 @@ const Signup = () => {
           gender: formData.gender,
           email: formData.email.trim(),
           password: formData.password,
-          accepts_terms_and_conditions: true,
+          accepts_terms_and_conditions: formData.acceptsTermsAndConditions,
         };
         endpoint = `${API_URL}/api/auth/register-patient`;
       } else if (userType === "specialist") {
@@ -278,24 +298,29 @@ const Signup = () => {
           last_name: formData.lastName.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          phone: formData.phone,
-          gender: formData.gender,
-          city: formData.city,
-          specialist_type: formData.specialistType,
-          years_experience: parseInt(formData.yearsExperience),
-          license_number: formData.licenseNumber,
-          accepts_terms_and_conditions: true,
+          accepts_terms_and_conditions: formData.acceptsTermsAndConditions,
         };
         endpoint = `${API_URL}/api/auth/register-specialist`;
+        
+        console.log("DEBUG: Specialist backendFormData:", backendFormData);
+        console.log("DEBUG: Original formData:", formData);
       }
 
+      // Debug: Log what we're sending
+      console.log("DEBUG: Sending registration data:", backendFormData);
+      console.log("DEBUG: Endpoint:", endpoint);
+      console.log("DEBUG: User type:", userType);
+      console.log("DEBUG: Original formData:", formData);
+      
       // Make the registration request
-      await axios.post(endpoint, backendFormData, {
+      const response = await axios.post(endpoint, backendFormData, {
         headers: {
           "Content-Type": "application/json",
         },
         timeout: 5000,
       });
+      
+      console.log("DEBUG: Registration response:", response.data);
 
       // On successful signup, navigate to the OTP verification page
       setErrors((prev) => ({ ...prev, form: "" })); // Clear any previous form errors
@@ -395,7 +420,7 @@ const Signup = () => {
                     ? "bg-gray-700 text-gray-300"
                     : "bg-white text-gray-700"
                 }`}
-                onClick={() => setUserType("patient")}
+                onClick={() => handleUserTypeChange("patient")}
               >
                 Patient
               </button>
@@ -410,7 +435,7 @@ const Signup = () => {
                     ? "bg-gray-700 text-gray-300"
                     : "bg-white text-gray-700"
                 }`}
-                onClick={() => setUserType("specialist")}
+                onClick={() => handleUserTypeChange("specialist")}
               >
                 Specialist
               </button>
@@ -558,7 +583,8 @@ const Signup = () => {
               </AnimatePresence>
             </motion.div>
 
-            {/* Date of Birth Field */}
+            {/* Date of Birth Field - ONLY for patients */}
+            {userType === "patient" && (
             <motion.div className="mb-4" variants={itemVariants}>
               <label
                 className={`block text-sm font-medium mb-2 ${
@@ -599,8 +625,10 @@ const Signup = () => {
                 )}
               </AnimatePresence>
             </motion.div>
+            )}
 
-            {/* Gender Field */}
+            {/* Gender Field - ONLY for patients */}
+            {userType === "patient" && (
             <motion.div className="mb-4" variants={itemVariants}>
               <label
                 className={`block text-sm font-medium mb-2 ${
@@ -646,6 +674,7 @@ const Signup = () => {
                 )}
               </AnimatePresence>
             </motion.div>
+            )}
 
             {/* Email Field */}
             <motion.div className="mb-4" variants={itemVariants}>
@@ -752,7 +781,7 @@ const Signup = () => {
             </motion.div>
 
             {/* Confirm Password Field */}
-            <motion.div className="mb-6" variants={itemVariants}>
+            <motion.div className="mb-4" variants={itemVariants}>
               <label
                 className={`block text-sm font-medium mb-2 ${
                   darkMode ? "text-gray-300" : "text-gray-700"
@@ -812,232 +841,71 @@ const Signup = () => {
               </AnimatePresence>
             </motion.div>
 
-            {/* Specialist-specific fields */}
-            {userType === "specialist" && (
-              <>
-                {/* Phone Field */}
-                <motion.div className="mb-4" variants={itemVariants}>
+            {/* Terms and Conditions Checkbox */}
+            <motion.div className="mb-6" variants={itemVariants}>
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    id="acceptsTermsAndConditions"
+                    name="acceptsTermsAndConditions"
+                    type="checkbox"
+                    checked={formData.acceptsTermsAndConditions}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      acceptsTermsAndConditions: e.target.checked
+                    }))}
+                    className={`h-4 w-4 rounded border-2 focus:ring-2 transition-colors duration-200 ${
+                      errors.acceptsTermsAndConditions
+                        ? "border-red-500 focus:ring-red-300"
+                        : darkMode
+                        ? "border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 focus:border-indigo-500"
+                        : "border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:border-indigo-500"
+                    }`}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="ml-3 text-sm">
                   <label
-                    className={`block text-sm font-medium mb-2 ${
+                    htmlFor="acceptsTermsAndConditions"
+                    className={`font-medium ${
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="text-gray-400" size={18} />
-                    </div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                        errors.phone
-                          ? "border-red-500 focus:ring-red-300"
-                          : darkMode
-                          ? "border-gray-600 bg-gray-700 text-white focus:ring-indigo-500 focus:border-indigo-500"
-                          : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
+                    I accept the{" "}
+                    <button
+                      type="button"
+                      className={`underline hover:no-underline ${
+                        darkMode
+                          ? "text-indigo-400 hover:text-indigo-300"
+                          : "text-indigo-600 hover:text-indigo-800"
                       }`}
-                      placeholder="+92XXXXXXXXXX"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <AnimatePresence>
-                    {errors.phone && (
-                      <motion.p
-                        className="text-red-500 text-xs mt-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        {errors.phone}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* City Field */}
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    City
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="text-gray-400" size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      name="city"
-                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                        errors.city
-                          ? "border-red-500 focus:ring-red-300"
-                          : darkMode
-                          ? "border-gray-600 bg-gray-700 text-white focus:ring-indigo-500 focus:border-indigo-500"
-                          : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-                      }`}
-                      placeholder="Enter your city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <AnimatePresence>
-                    {errors.city && (
-                      <motion.p
-                        className="text-red-500 text-xs mt-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        {errors.city}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Specialist Type Field */}
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Specialist Type
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="text-gray-400" size={18} />
-                    </div>
-                    <select
-                      name="specialistType"
-                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                        errors.specialistType
-                          ? "border-red-500 focus:ring-red-300"
-                          : darkMode
-                          ? "border-gray-600 bg-gray-700 text-white focus:ring-indigo-500 focus:border-indigo-500"
-                          : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-                      }`}
-                      value={formData.specialistType}
-                      onChange={handleChange}
+                      onClick={() => {
+                        // TODO: Open terms and conditions modal/page
+                        alert("Terms and Conditions would open here");
+                      }}
                       disabled={isSubmitting}
                     >
-                      <option value="">Select Specialist Type</option>
-                      <option value="psychiatrist">Psychiatrist</option>
-                      <option value="psychologist">Psychologist</option>
-                      <option value="counselor">Counselor</option>
-                      <option value="therapist">Therapist</option>
-                      <option value="social_worker">Social Worker</option>
-                    </select>
-                  </div>
-                  <AnimatePresence>
-                    {errors.specialistType && (
-                      <motion.p
-                        className="text-red-500 text-xs mt-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        {errors.specialistType}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Years Experience Field */}
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Years of Experience
+                      Terms and Conditions
+                    </button>
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="text-gray-400" size={18} />
-                    </div>
-                    <input
-                      type="number"
-                      name="yearsExperience"
-                      min="0"
-                      max="60"
-                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                        errors.yearsExperience
-                          ? "border-red-500 focus:ring-red-300"
-                          : darkMode
-                          ? "border-gray-600 bg-gray-700 text-white focus:ring-indigo-500 focus:border-indigo-500"
-                          : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-                      }`}
-                      placeholder="0"
-                      value={formData.yearsExperience}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
                   <AnimatePresence>
-                    {errors.yearsExperience && (
+                    {errors.acceptsTermsAndConditions && (
                       <motion.p
                         className="text-red-500 text-xs mt-1"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                       >
-                        {errors.yearsExperience}
+                        {errors.acceptsTermsAndConditions}
                       </motion.p>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
+              </div>
+            </motion.div>
 
-                {/* License Number Field */}
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    License Number
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="text-gray-400" size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      name="licenseNumber"
-                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                        errors.licenseNumber
-                          ? "border-red-500 focus:ring-red-300"
-                          : darkMode
-                          ? "border-gray-600 bg-gray-700 text-white focus:ring-indigo-500 focus:border-indigo-500"
-                          : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-                      }`}
-                      placeholder="Enter your license number"
-                      value={formData.licenseNumber}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <AnimatePresence>
-                    {errors.licenseNumber && (
-                      <motion.p
-                        className="text-red-500 text-xs mt-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                      >
-                        {errors.licenseNumber}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </>
-            )}
+            {/* Specialist-specific fields - REMOVED */}
+            {/* All specialist fields have been removed from the form */}
 
             {/* Submit Button */}
             <motion.button
