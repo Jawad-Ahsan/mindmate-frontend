@@ -16,7 +16,7 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const SpecialistModule = ({ darkMode }) => {
+const SpecialistModule = ({ darkMode, activeSidebarItem = "search" }) => {
   const [specialists, setSpecialists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +33,7 @@ const SpecialistModule = ({ darkMode }) => {
   const [appointments, setAppointments] = useState([]);
   const [showAppointments, setShowAppointments] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const consultationModes = [
     { value: "online", label: "Online", icon: "💻" },
@@ -53,24 +54,82 @@ const SpecialistModule = ({ darkMode }) => {
     { value: "experience_high", label: "Most Experienced" }
   ];
 
+  // Get content based on active sidebar item
+  const getSidebarContent = () => {
+    switch (activeSidebarItem) {
+      case "search":
+        return {
+          title: "Find Mental Health Specialists",
+          description: "Connect with qualified mental health professionals",
+          emptyMessage: "No specialists found matching your criteria"
+        };
+      case "favorites":
+        return {
+          title: "My Favorite Specialists",
+          description: "Your saved and preferred specialists",
+          emptyMessage: "No favorite specialists yet. Start building your list!"
+        };
+      case "appointments":
+        return {
+          title: "Specialists with Appointments",
+          description: "Specialists you have appointments with",
+          emptyMessage: "No appointments with specialists yet"
+        };
+      case "history":
+        return {
+          title: "Session History",
+          description: "Specialists from your past sessions",
+          emptyMessage: "No session history available yet"
+        };
+      default:
+        return {
+          title: "Find Mental Health Specialists",
+          description: "Connect with qualified mental health professionals",
+          emptyMessage: "No specialists found matching your criteria"
+        };
+    }
+  };
+
   const searchSpecialists = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
       
-      // Use the SMA search endpoint but with minimal filters
+      // Build search parameters based on activeSidebarItem
       const params = new URLSearchParams({
         page: 1,
         size: 50  // Get more results
       });
 
-      console.log("Searching specialists with minimal filters");
+      // Add filters based on activeSidebarItem
+      switch (activeSidebarItem) {
+        case "search":
+          // Show all specialists
+          break;
+        case "favorites":
+          // Show favorited specialists
+          params.append("favorited", "true");
+          break;
+        case "appointments":
+          // Show specialists with existing appointments
+          params.append("has_appointments", "true");
+          break;
+        case "history":
+          // Show specialists with session history
+          params.append("has_history", "true");
+          break;
+        default:
+          break;
+      }
+
+      console.log(`Searching specialists for: ${activeSidebarItem}`);
       const response = await axios.get(`${API_URL}/api/specialists/search?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       console.log("SMA search response:", response.data);
       setSpecialists(response.data.specialists || []);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Error searching specialists:", error);
       // Fallback to empty array
@@ -102,7 +161,15 @@ const SpecialistModule = ({ darkMode }) => {
   useEffect(() => {
     searchSpecialists();
     fetchAppointments();
-  }, [filters]);
+    
+    // Set up HTTP polling for real-time updates
+    const pollInterval = setInterval(() => {
+      searchSpecialists();
+      fetchAppointments();
+    }, 30000); // Poll every 30 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [filters, activeSidebarItem]);
 
   // Check for appointment status updates and show notifications
   useEffect(() => {
@@ -334,12 +401,12 @@ const SpecialistModule = ({ darkMode }) => {
         <h1 className={`text-3xl font-bold mb-2 ${
           darkMode ? "text-white" : "text-gray-900"
         }`}>
-          Find Mental Health Specialists
+          {getSidebarContent().title}
         </h1>
         <p className={`text-lg ${
           darkMode ? "text-gray-400" : "text-gray-600"
         }`}>
-          Connect with qualified mental health professionals
+          {getSidebarContent().description}
         </p>
       </div>
 
@@ -552,8 +619,10 @@ const SpecialistModule = ({ darkMode }) => {
             darkMode ? "text-gray-400" : "text-gray-600"
           }`}>
             <User className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium mb-2">No specialists found</h3>
-            <p>Try adjusting your search criteria or filters</p>
+            <h3 className="text-lg font-medium mb-2">{getSidebarContent().emptyMessage}</h3>
+            {activeSidebarItem === "search" && (
+              <p>Try adjusting your search criteria or filters</p>
+            )}
           </div>
         )}
       </div>

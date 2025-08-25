@@ -84,6 +84,9 @@ const MainLayout = () => {
   const [sidebarWidth, setSidebarWidth] = useState(72);
   const [activeChatId, setActiveChatId] = useState(null);
   const [refreshSessions, setRefreshSessions] = useState(false);
+  const [activeSidebarItem, setActiveSidebarItem] = useState("dashboard");
+  const location = useLocation();
+  const activeTab = location.pathname.split("/").pop();
 
   const handleSessionUpdate = () => {
     setRefreshSessions((prev) => !prev);
@@ -104,6 +107,9 @@ const MainLayout = () => {
           setActiveChatId={setActiveChatId}
           refreshSessions={refreshSessions}
           onHoverChange={(isHovered) => setSidebarWidth(isHovered ? 240 : 72)}
+          activeTab={activeTab}
+          activeSidebarItem={activeSidebarItem}
+          onSidebarItemClick={setActiveSidebarItem}
         />
 
         <motion.main
@@ -160,6 +166,7 @@ const MainLayout = () => {
                     darkMode={darkMode}
                     activeChatId={activeChatId}
                     onSessionUpdate={handleSessionUpdate}
+                    activeSidebarItem={activeSidebarItem}
                   />
                 </ProtectedRoute>
               }

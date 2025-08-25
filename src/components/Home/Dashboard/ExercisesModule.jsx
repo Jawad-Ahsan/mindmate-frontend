@@ -32,32 +32,58 @@ const exercises = [
   },
 ];
 
-const ExercisesModule = ({ darkMode }) => {
+const ExercisesModule = ({ darkMode, activeSidebarItem = "breathing" }) => {
+  // Filter exercises based on activeSidebarItem
+  const getFilteredExercises = () => {
+    switch (activeSidebarItem) {
+      case "breathing":
+        return exercises.filter(ex => ex.category === "Anxiety Relief");
+      case "meditation":
+        return exercises.filter(ex => ex.category === "Stress Reduction");
+      case "mindfulness":
+        return exercises.filter(ex => ex.category === "Mindfulness");
+      case "progress":
+        return exercises.filter(ex => ex.category === "Positive Thinking");
+      default:
+        return exercises;
+    }
+  };
+
+  const filteredExercises = getFilteredExercises();
+
   return (
     <div
       className={`p-6 h-full overflow-auto ${
         darkMode ? "bg-transparent text-gray-100" : "bg-transparent text-gray-900"
       }`}
     >
-      <div className="flex items-center space-x-3 mb-8">
-        <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-green-400 to-emerald-500"}`}>
-          <Heart className="h-8 w-8 text-white" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <div className={`p-3 rounded-xl ${darkMode ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-green-400 to-emerald-500"}`}>
+            <Heart className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h2
+              className={`text-3xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Wellness Exercises
+            </h2>
+            <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+              {activeSidebarItem === "breathing" ? "Breathing & Anxiety Relief" :
+               activeSidebarItem === "meditation" ? "Meditation & Stress Reduction" :
+               activeSidebarItem === "mindfulness" ? "Mindfulness Practices" :
+               activeSidebarItem === "progress" ? "Positive Thinking & Progress" : "All Wellness Exercises"}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2
-            className={`text-3xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Wellness Exercises
-          </h2>
-          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Practice mindfulness and mental wellness
-          </p>
+        <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+          {filteredExercises.length} exercise{filteredExercises.length !== 1 ? 's' : ''} available
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {exercises.map((exercise) => (
+        {filteredExercises.map((exercise) => (
           <motion.div
             key={exercise.id}
             whileHover={{ y: -8, scale: 1.02 }}

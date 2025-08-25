@@ -34,7 +34,8 @@ const SpecialistCompleteProfile = () => {
     languages_spoken: [],
     website_url: "",
     social_media_links: {},
-    specializations: []
+    specializations: [],
+    availability_slots: []
   });
 
   const [specializationData, setSpecializationData] = useState({
@@ -44,7 +45,13 @@ const SpecialistCompleteProfile = () => {
     certification_date: ""
   });
 
-  const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments] = useState({
+    identity_card: null,
+    degree: null,
+    license: null,
+    experience_letter: null
+  });
+  const [mandatoryDocuments, setMandatoryDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -54,11 +61,42 @@ const SpecialistCompleteProfile = () => {
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+  // Available time slots
+  const timeSlots = [
+    { value: "09:00-10:00", label: "9:00 AM - 10:00 AM" },
+    { value: "10:00-11:00", label: "10:00 AM - 11:00 AM" },
+    { value: "11:00-12:00", label: "11:00 AM - 12:00 PM" },
+    { value: "12:00-13:00", label: "12:00 PM - 1:00 PM" },
+    { value: "13:00-14:00", label: "1:00 PM - 2:00 PM" },
+    { value: "14:00-15:00", label: "2:00 PM - 3:00 PM" },
+    { value: "15:00-16:00", label: "3:00 PM - 4:00 PM" },
+    { value: "16:00-17:00", label: "4:00 PM - 5:00 PM" }
+  ];
+
   // Initialize dark mode from localStorage
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode") === "true";
     setDarkMode(savedMode);
   }, []);
+
+  // Fetch mandatory documents list
+  useEffect(() => {
+    const fetchMandatoryDocuments = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      try {
+        const response = await axios.get(`${API_URL}/api/specialist/mandatory-documents`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMandatoryDocuments(response.data.documents);
+      } catch (error) {
+        console.error("Failed to fetch mandatory documents:", error);
+      }
+    };
+
+    fetchMandatoryDocuments();
+  }, [API_URL]);
 
   // Check authentication and get current specialist info
   useEffect(() => {
@@ -134,6 +172,31 @@ const SpecialistCompleteProfile = () => {
     }
   };
 
+  const handleAvailabilitySlotChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      if (profileData.availability_slots.length >= 8) {
+        toast.error("Maximum 8 time slots allowed (8 hours per day)");
+        e.target.checked = false;
+        return;
+      }
+      setProfileData(prev => ({
+        ...prev,
+        availability_slots: [...prev.availability_slots, value]
+      }));
+    } else {
+      setProfileData(prev => ({
+        ...prev,
+        availability_slots: prev.availability_slots.filter(slot => slot !== value)
+      }));
+    }
+    
+    // Clear availability error when user selects slots
+    if (errors.availability_slots) {
+      setErrors(prev => ({ ...prev, availability_slots: "" }));
+    }
+  };
+
   const addSpecialization = () => {
     if (!specializationData.specialization || !specializationData.years_of_experience) {
       toast.error("Please fill in specialization and years of experience");
@@ -178,12 +241,41 @@ const SpecialistCompleteProfile = () => {
   const validateProfile = () => {
     const newErrors = {};
     
-    if (!profileData.phone) newErrors.phone = "Phone number is required";
-    if (!profileData.address) newErrors.address = "Address is required";
-    if (!profileData.bio) newErrors.bio = "Bio is required";
-    if (!profileData.consultation_fee) newErrors.consultation_fee = "Consultation fee is required";
+    // Required field validation
+    if (!profileData.phone || !profileData.phone.trim()) newErrors.phone = "Phone number is required";
+    if (!profileData.address || !profileData.address.trim()) newErrors.address = "Address is required";
+    
+    // Bio validation with word count
+    if (!profileData.bio || !profileData.bio.trim()) {
+      newErrors.bio = "Bio is required";
+    } else {
+      const words = profileData.bio.trim().split(/\s+/).filter(word => word.length > 0);
+      if (words.length < 20) {
+        newErrors.bio = `Bio must contain at least 20 words. Currently has ${words.length} words.`;
+      }
+    }
+    
+    if (!profileData.consultation_fee || parseFloat(profileData.consultation_fee) <= 0) {
+      newErrors.consultation_fee = "Consultation fee must be greater than 0";
+    }
+    
+    // Optional field validation - if provided, should not be empty
+    if (profileData.clinic_name && !profileData.clinic_name.trim()) {
+      newErrors.clinic_name = "Clinic name cannot be empty if provided";
+    }
+    if (profileData.website_url && !profileData.website_url.trim()) {
+      newErrors.website_url = "Website URL cannot be empty if provided";
+    }
+    
     if (profileData.languages_spoken.length === 0) newErrors.languages_spoken = "At least one language is required";
     if (profileData.specializations.length === 0) newErrors.specializations = "At least one specialization is required";
+    
+    // Availability slots validation
+    if (profileData.availability_slots.length === 0) {
+      newErrors.availability_slots = "At least one availability slot is required";
+    } else if (profileData.availability_slots.length > 8) {
+      newErrors.availability_slots = "Maximum 8 availability slots allowed";
+    }
     
     // Check if exactly one specialization is primary
     const primaryCount = profileData.specializations.filter(spec => spec.is_primary).length;
@@ -193,6 +285,53 @@ const SpecialistCompleteProfile = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const isProfileCompleteForSubmission = () => {
+    // Check if all required fields are filled
+    const hasRequiredFields = 
+      profileData.phone?.trim() && 
+      profileData.address?.trim() && 
+      profileData.bio?.trim() && 
+      profileData.consultation_fee && 
+      profileData.languages_spoken.length > 0 &&
+      profileData.specializations.length > 0 &&
+      profileData.availability_slots.length > 0;
+    
+    // Check if exactly one specialization is primary
+    const hasPrimarySpecialization = profileData.specializations.filter(spec => spec.is_primary).length === 1;
+    
+    // Check if bio has at least 20 words
+    const hasValidBio = profileData.bio?.trim().split(/\s+/).filter(word => word.length > 0).length >= 20;
+    
+    return hasRequiredFields && hasPrimarySpecialization && hasValidBio;
+  };
+
+  const getProfileCompletionStatus = () => {
+    const requiredFields = [
+      'phone', 'address', 'bio', 'consultation_fee', 
+      'languages_spoken', 'specializations', 'availability_slots'
+    ];
+    
+    let completedFields = 0;
+    
+    // Check each required field
+    if (profileData.phone?.trim()) completedFields++;
+    if (profileData.address?.trim()) completedFields++;
+    if (profileData.bio?.trim() && profileData.bio.trim().split(/\s+/).filter(word => word.length > 0).length >= 20) completedFields++;
+    if (profileData.consultation_fee) completedFields++;
+    if (profileData.languages_spoken.length > 0) completedFields++;
+    if (profileData.specializations.length > 0 && profileData.specializations.filter(spec => spec.is_primary).length === 1) completedFields++;
+    if (profileData.availability_slots.length > 0) completedFields++;
+    
+    const percentage = Math.round((completedFields / requiredFields.length) * 100);
+    
+    return {
+      percentage,
+      completedFields,
+      totalFields: requiredFields.length,
+      isComplete: percentage === 100
+    };
   };
 
   const saveProfile = async () => {
@@ -217,7 +356,8 @@ const SpecialistCompleteProfile = () => {
           years_of_experience_in_specialization: parseInt(spec.years_of_experience),
           is_primary_specialization: spec.is_primary,
           certification_date: spec.certification_date || null
-        }))
+        })),
+        availability_slots: profileData.availability_slots
       };
       
       console.log("DEBUG: Sending profile data:", payload);
@@ -259,8 +399,7 @@ const SpecialistCompleteProfile = () => {
     }
   };
 
-  const handleDocumentUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleDocumentUpload = async (file, documentType) => {
     if (!file) return;
 
     // Validate file
@@ -278,7 +417,7 @@ const SpecialistCompleteProfile = () => {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('document_type', 'license'); // Default to license, can be made configurable
+    formData.append('document_type', documentType);
     formData.append('document_name', file.name);
 
     setLoading(true);
@@ -297,13 +436,16 @@ const SpecialistCompleteProfile = () => {
       );
 
       toast.success("Document uploaded successfully!");
-      setDocuments(prev => [...prev, {
-        id: response.data.document_id,
-        name: response.data.document_name,
-        type: 'license',
-        status: 'pending',
-        uploaded_at: new Date().toISOString()
-      }]);
+      setDocuments(prev => ({
+        ...prev,
+        [documentType]: {
+          id: response.data.document_id,
+          name: response.data.document_name,
+          type: documentType,
+          status: 'pending',
+          uploaded_at: new Date().toISOString()
+        }
+      }));
     } catch (error) {
       console.error("Document upload error:", error);
       toast.error(error.response?.data?.detail || "Failed to upload document");
@@ -312,19 +454,90 @@ const SpecialistCompleteProfile = () => {
     }
   };
 
-  const removeDocument = (documentId) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+  const removeDocument = async (documentType) => {
+    const document = documents[documentType];
+    if (!document) return;
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.delete(`${API_URL}/api/specialist/documents/${document.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setDocuments(prev => ({
+        ...prev,
+        [documentType]: null
+      }));
+      toast.success("Document removed successfully");
+    } catch (error) {
+      console.error("Document deletion error:", error);
+      toast.error(error.response?.data?.detail || "Failed to remove document");
+    }
   };
 
-  const submitForApproval = () => {
-    if (documents.length === 0) {
-      toast.error("Please upload at least one document before submitting for approval");
+  const validateDocuments = () => {
+    const mandatoryTypes = ['identity_card', 'degree', 'license', 'experience_letter'];
+    const missingDocs = mandatoryTypes.filter(type => !documents[type]);
+    
+    if (missingDocs.length > 0) {
+      const missingLabels = missingDocs.map(type => {
+        switch(type) {
+          case 'identity_card': return 'Identity Card';
+          case 'degree': return 'Degree Certificate';
+          case 'license': return 'Professional License';
+          case 'experience_letter': return 'Experience Letter';
+          default: return type;
+        }
+      });
+      toast.error(`Please upload all required documents. Missing: ${missingLabels.join(', ')}`);
+      return false;
+    }
+    return true;
+  };
+
+  const submitForApproval = async () => {
+    if (!validateDocuments()) {
       return;
     }
     
-    toast.success("Your application has been submitted for admin approval!");
-    // In a real app, you might want to make an API call here to notify admins
-    // For now, we'll just show a success message
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      
+      const response = await axios.post(
+        `${API_URL}/api/specialist/submit-for-approval`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success("Application submitted successfully for admin approval!");
+        
+        // Show detailed next steps
+        const nextSteps = response.data.next_steps;
+        if (nextSteps && nextSteps.length > 0) {
+          setTimeout(() => {
+            toast.success(
+              `Next Steps:\n${nextSteps.slice(0, 2).join('\n')}`,
+              { duration: 6000 }
+            );
+          }, 1000);
+        }
+        
+        // Redirect to pending approval page or refresh status
+        setTimeout(() => {
+          navigate("/pending-approval");
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      const errorMessage = error.response?.data?.detail || "Failed to submit application. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -333,6 +546,95 @@ const SpecialistCompleteProfile = () => {
       toast.success("Logged out successfully");
       navigate("/login");
     }
+  };
+
+  // Document upload box component
+  const DocumentUploadBox = ({ documentType, label, description, uploadedDoc }) => {
+    const [dragOver, setDragOver] = useState(false);
+
+    const handleDrop = (e) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleDocumentUpload(file, documentType);
+      }
+    };
+
+    const handleFileSelect = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleDocumentUpload(file, documentType);
+      }
+    };
+
+    return (
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-2">{label}</h3>
+        <p className="text-sm text-gray-600 mb-3">{description}</p>
+        
+        {uploadedDoc ? (
+          // Show uploaded document
+          <div className={`${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <CheckCircle className="text-green-600" size={24} />
+                <div>
+                  <p className="font-medium text-green-800">{uploadedDoc.name}</p>
+                  <p className="text-sm text-green-600">Uploaded successfully</p>
+                </div>
+              </div>
+              <button
+                onClick={() => removeDocument(documentType)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Remove document"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Show upload area
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              dragOver
+                ? darkMode
+                  ? 'border-indigo-400 bg-indigo-900/20'
+                  : 'border-indigo-400 bg-indigo-50'
+                : darkMode
+                ? 'border-gray-600 bg-gray-700'
+                : 'border-gray-300 bg-gray-50'
+            }`}
+            onDrop={handleDrop}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+          >
+            <Upload className={`mx-auto h-12 w-12 ${dragOver ? 'text-indigo-500' : 'text-gray-400'}`} />
+            <div className="mt-4">
+              <label htmlFor={`document-upload-${documentType}`} className="cursor-pointer">
+                <span className="text-indigo-600 hover:text-indigo-500 font-medium">
+                  Click to upload
+                </span>
+                <span className="text-gray-500"> or drag and drop</span>
+              </label>
+              <input
+                id={`document-upload-${documentType}`}
+                type="file"
+                onChange={handleFileSelect}
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              PDF, JPG, PNG, DOC, DOCX up to 10MB
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const animationVariants = {
@@ -465,11 +767,14 @@ const SpecialistCompleteProfile = () => {
                   onChange={handleProfileChange}
                   placeholder="Enter clinic or practice name"
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                    darkMode
+                    errors.clinic_name
+                      ? 'border-red-500 focus:ring-red-300'
+                      : darkMode
                       ? 'border-gray-600 bg-gray-700 focus:ring-indigo-500 focus:border-indigo-500'
                       : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
                   }`}
                 />
+                {errors.clinic_name && <p className="text-red-500 text-sm mt-1">{errors.clinic_name}</p>}
               </div>
 
               {/* Consultation Fee */}
@@ -503,14 +808,17 @@ const SpecialistCompleteProfile = () => {
                     name="website_url"
                     value={profileData.website_url}
                     onChange={handleProfileChange}
-                    placeholder="https://yourwebsite.com"
+                    placeholder="www.yourwebsite.com or https://yourwebsite.com"
                     className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                      darkMode
+                      errors.website_url
+                        ? 'border-red-500 focus:ring-red-300'
+                        : darkMode
                         ? 'border-gray-600 bg-gray-700 focus:ring-indigo-500 focus:border-indigo-500'
                         : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
                     }`}
                   />
                 </div>
+                {errors.website_url && <p className="text-red-500 text-sm mt-1">{errors.website_url}</p>}
               </div>
             </div>
 
@@ -667,19 +975,117 @@ const SpecialistCompleteProfile = () => {
               {errors.specializations && <p className="text-red-500 text-sm mt-1">{errors.specializations}</p>}
             </div>
 
+            {/* Availability Slots */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">Available Time Slots</label>
+              <p className="text-sm text-gray-600 mb-4">
+                Select your available consultation hours (minimum 1 hour, maximum 8 hours per day)
+              </p>
+              
+              <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 mb-4`}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {timeSlots.map(slot => (
+                    <label key={slot.value} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={slot.value}
+                        checked={profileData.availability_slots.includes(slot.value)}
+                        onChange={handleAvailabilitySlotChange}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm">{slot.label}</span>
+                    </label>
+                  ))}
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-600">
+                  <p>Selected slots: {profileData.availability_slots.length} / 8</p>
+                  {profileData.availability_slots.length > 0 && (
+                    <p className="mt-1">
+                      <span className="font-medium">Your schedule:</span> {
+                        profileData.availability_slots
+                          .sort()
+                          .map(slot => timeSlots.find(t => t.value === slot)?.label)
+                          .join(', ')
+                      }
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {errors.availability_slots && <p className="text-red-500 text-sm mt-1">{errors.availability_slots}</p>}
+            </div>
+
+            {/* Validation Summary */}
+            {Object.keys(errors).length > 0 && (
+              <div className={`mt-6 ${darkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'} border rounded-lg p-4`}>
+                <div className="flex items-start space-x-3">
+                  <XCircle className="text-red-600 mt-0.5" size={20} />
+                  <div>
+                    <h3 className="font-medium text-red-800 mb-2">Please fix the following errors:</h3>
+                    <ul className="text-sm text-red-700 space-y-1">
+                      {Object.entries(errors).map(([field, error]) => (
+                        <li key={field}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Profile Completion Status */}
+            <div className="mt-6">
+              <div className={`${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-lg p-4`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium">Profile Completion</h3>
+                  <span className={`text-sm font-medium ${
+                    getProfileCompletionStatus().isComplete ? 'text-green-600' : 'text-yellow-600'
+                  }`}>
+                    {getProfileCompletionStatus().percentage}% Complete
+                  </span>
+                </div>
+                
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      getProfileCompletionStatus().isComplete ? 'bg-green-500' : 'bg-yellow-500'
+                    }`}
+                    style={{
+                      width: `${getProfileCompletionStatus().percentage}%`
+                    }}
+                  ></div>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  <p>Required fields: {getProfileCompletionStatus().completedFields} / {getProfileCompletionStatus().totalFields}</p>
+                  {getProfileCompletionStatus().isComplete && (
+                    <p className="mt-1 text-green-600">
+                      ✅ Profile is complete! You can now upload documents and submit for approval.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Save Button */}
             <div className="mt-8 flex justify-end">
               <button
                 onClick={saveProfile}
-                disabled={saving}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                disabled={saving || Object.keys(errors).length > 0}
+                className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                  saving || Object.keys(errors).length > 0
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                }`}
               >
                 {saving ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : (
                   <Save size={20} />
                 )}
-                <span>{saving ? 'Saving...' : 'Save Profile'}</span>
+                <span>
+                  {saving ? 'Saving...' : Object.keys(errors).length > 0 ? 'Fix errors to save' : 'Save Profile'}
+                </span>
               </button>
             </div>
           </motion.div>
@@ -695,80 +1101,133 @@ const SpecialistCompleteProfile = () => {
           >
             <h2 className="text-xl font-semibold mb-6">Required Documents</h2>
             
-            <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Please upload the following documents for verification:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-600">
-                <li>Professional license or certification</li>
-                <li>Degree certificate</li>
-                <li>Identity verification document</li>
-                <li>Experience letters (if applicable)</li>
-              </ul>
-            </div>
-
-            {/* Document Upload */}
-            <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-6 border-2 border-dashed border-gray-300`}>
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <label htmlFor="document-upload" className="cursor-pointer">
-                    <span className="text-indigo-600 hover:text-indigo-500 font-medium">
-                      Click to upload
-                    </span>
-                    <span className="text-gray-500"> or drag and drop</span>
-                  </label>
-                  <input
-                    id="document-upload"
-                    type="file"
-                    onChange={handleDocumentUpload}
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    className="hidden"
-                  />
+            <div className="mb-8">
+              <div className={`${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4`}>
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="text-blue-600 mt-0.5" size={20} />
+                  <div>
+                    <h3 className="font-medium text-blue-800 mb-2">Document Upload Instructions</h3>
+                    <p className="text-sm text-blue-700 mb-3">
+                      All four documents below are mandatory for account verification. Please ensure:
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Files are clear and readable</li>
+                      <li>• Maximum file size is 10MB</li>
+                      <li>• Accepted formats: PDF, JPG, PNG, DOC, DOCX</li>
+                      <li>• All information is clearly visible</li>
+                    </ul>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  PDF, JPG, PNG, DOC, DOCX up to 10MB
-                </p>
               </div>
             </div>
 
-            {/* Uploaded Documents */}
-            {documents.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-medium mb-4">Uploaded Documents</h3>
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 flex items-center justify-between`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <FileText className="text-indigo-600" size={20} />
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
-                          <p className="text-sm text-gray-600">Status: {doc.status}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeDocument(doc.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
+            {/* Document Upload Boxes */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DocumentUploadBox
+                documentType="identity_card"
+                label="Identity Card (CNIC)"
+                description="Clear photo of both sides of your CNIC or valid government ID"
+                uploadedDoc={documents.identity_card}
+              />
+              
+              <DocumentUploadBox
+                documentType="degree"
+                label="Degree Certificate"
+                description="Your highest degree certificate in mental health or related field"
+                uploadedDoc={documents.degree}
+              />
+              
+              <DocumentUploadBox
+                documentType="license"
+                label="Professional License"
+                description="Valid professional license, registration certificate, or practice permit"
+                uploadedDoc={documents.license}
+              />
+              
+              <DocumentUploadBox
+                documentType="experience_letter"
+                label="Experience Certificate"
+                description="Experience letters or certificates from previous practice or employment"
+                uploadedDoc={documents.experience_letter}
+              />
+            </div>
+
+            {/* Upload Progress Indicator */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Upload Progress</span>
+                <span className="text-sm text-gray-600">
+                  {Object.values(documents).filter(doc => doc !== null).length} / 4 documents uploaded
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(Object.values(documents).filter(doc => doc !== null).length / 4) * 100}%`
+                  }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Profile Completion Status */}
+            <div className="mt-8 mb-6">
+              <div className={`${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-lg p-4`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium">Profile Completion Status</h3>
+                  <span className={`text-sm font-medium ${
+                    getProfileCompletionStatus().isComplete ? 'text-green-600' : 'text-yellow-600'
+                  }`}>
+                    {getProfileCompletionStatus().percentage}% Complete
+                  </span>
+                </div>
+                
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      getProfileCompletionStatus().isComplete ? 'bg-green-500' : 'bg-yellow-500'
+                    }`}
+                    style={{
+                      width: `${getProfileCompletionStatus().percentage}%`
+                    }}
+                  ></div>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  <p>Required fields: {getProfileCompletionStatus().completedFields} / {getProfileCompletionStatus().totalFields}</p>
+                  {!getProfileCompletionStatus().isComplete && (
+                    <p className="mt-1 text-yellow-600">
+                      ⚠️ Complete your profile before submitting for approval
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Submit for Approval */}
             <div className="mt-8 flex justify-end">
               <button
                 onClick={submitForApproval}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                disabled={
+                  Object.values(documents).filter(doc => doc !== null).length < 4 || 
+                  !isProfileCompleteForSubmission()
+                }
+                className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                  Object.values(documents).filter(doc => doc !== null).length < 4 || 
+                  !isProfileCompleteForSubmission()
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
               >
                 <Send size={20} />
-                <span>Submit for Approval</span>
+                <span>
+                  {Object.values(documents).filter(doc => doc !== null).length < 4 
+                    ? 'Upload all documents' 
+                    : !isProfileCompleteForSubmission()
+                    ? 'Complete profile first'
+                    : 'Submit for Approval'
+                  }
+                </span>
               </button>
             </div>
           </motion.div>

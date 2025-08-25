@@ -3,29 +3,98 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import { BookOpen } from "react-feather";
 
-const JournalModule = ({ darkMode }) => {
+const JournalModule = ({ darkMode, activeSidebarItem = "new-entry" }) => {
   const [entries, setEntries] = useState([]);
   const [newEntry, setNewEntry] = useState("");
   const [mood, setMood] = useState("");
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  // Fetch journal entries on component mount
+  // Get content based on active sidebar item
+  const getSidebarContent = () => {
+    switch (activeSidebarItem) {
+      case "new-entry":
+        return {
+          title: "Daily Journal",
+          description: "Reflect on your thoughts and feelings",
+          emptyMessage: "No journal entries yet. Start writing above!"
+        };
+      case "today":
+        return {
+          title: "Today's Entries",
+          description: "Your journal entries from today",
+          emptyMessage: "No entries for today. Start your day with reflection!"
+        };
+      case "mood-tracker":
+        return {
+          title: "Mood Tracker",
+          description: "Track your emotional journey over time",
+          emptyMessage: "No mood entries yet. Start tracking your emotions!"
+        };
+      case "insights":
+        return {
+          title: "Journal Insights",
+          description: "Analytics and patterns from your journal",
+          emptyMessage: "No insights available yet. Keep writing to see patterns!"
+        };
+      default:
+        return {
+          title: "Daily Journal",
+          description: "Reflect on your thoughts and feelings",
+          emptyMessage: "No journal entries yet. Start writing above!"
+        };
+    }
+  };
+
+  // Fetch journal entries on component mount and when sidebar item changes
   useEffect(() => {
     fetchEntries();
-  }, [showArchived]);
+    
+    // Set up HTTP polling for real-time updates
+    const pollInterval = setInterval(() => {
+      fetchEntries();
+    }, 30000); // Poll every 30 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [showArchived, activeSidebarItem]);
 
   const fetchEntries = async () => {
     try {
       const token = localStorage.getItem("access_token");
+      
+      // Build filter parameters based on activeSidebarItem
+      let params = { archived: showArchived };
+      
+      switch (activeSidebarItem) {
+        case "today":
+          const today = new Date();
+          const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+          params.date_from = startOfDay.toISOString();
+          params.date_to = endOfDay.toISOString();
+          break;
+        case "mood-tracker":
+          params.include_mood = true;
+          break;
+        case "insights":
+          params.include_analytics = true;
+          break;
+        default:
+          // new-entry shows all entries
+          break;
+      }
+      
       const response = await axios.get(`${API_URL}/api/journal/entries`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { archived: showArchived }
+        params: params
       });
+      
       setEntries(response.data);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching journal entries:", error);
     }
@@ -113,10 +182,10 @@ const JournalModule = ({ darkMode }) => {
                 darkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              Daily Journal
+              {getSidebarContent().title}
             </h2>
             <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-              Reflect on your thoughts and feelings
+              {getSidebarContent().description}
             </p>
           </div>
         </div>
@@ -227,7 +296,7 @@ const JournalModule = ({ darkMode }) => {
               darkMode ? "text-gray-400" : "text-gray-500"
             }`}
           >
-            No journal entries yet. Start writing above!
+            {getSidebarContent().emptyMessage}
           </div>
         ) : (
           entries.map((entry) => (

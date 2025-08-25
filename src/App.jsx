@@ -12,6 +12,8 @@ import OAuthSuccess from "./components/OAuthSuccess";
 import AdminDashboard from "./components/AdminDashboard";
 import SpecialistDashboard from "./components/SpecialistDashboard";
 import SpecialistCompleteProfile from "./components/SpecialistCompleteProfile";
+import SpecialistPendingApproval from "./components/SpecialistPendingApproval";
+import SpecialistApplicationRejected from "./components/SpecialistApplicationRejected";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -33,8 +35,12 @@ function App() {
           element={<MandatoryQuestionnaire />}
         />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/specialist" element={<SpecialistDashboard />} />
-        <Route path="/specialist-complete-profile" element={<SpecialistCompleteProfile />} />
+        <Route path="/specialist-dashboard" element={<SpecialistDashboard />} />
+        <Route path="/specialist" element={<SpecialistDashboard />} /> {/* Legacy route */}
+        <Route path="/complete-profile" element={<SpecialistCompleteProfile />} />
+        <Route path="/specialist-complete-profile" element={<SpecialistCompleteProfile />} /> {/* Legacy route */}
+        <Route path="/pending-approval" element={<SpecialistPendingApproval />} />
+        <Route path="/application-rejected" element={<SpecialistApplicationRejected />} />
       </Routes>
     </Router>
   );

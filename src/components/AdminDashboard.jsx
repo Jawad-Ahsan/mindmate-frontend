@@ -33,6 +33,8 @@ const AdminDashboard = () => {
   const [adminInfo, setAdminInfo] = useState(null);
   const [activeTab, setActiveTab] = useState("patients");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showSpecialistDetailsModal, setShowSpecialistDetailsModal] = useState(false);
+  const [selectedSpecialist, setSelectedSpecialist] = useState(null);
   const navigate = useNavigate();
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -152,6 +154,9 @@ const AdminDashboard = () => {
           ? { ...specialist, approval_status: "approved" }
           : specialist
       ));
+      
+      // Refresh specialists to get updated data
+      fetchSpecialists();
     } catch (error) {
       console.error("Error approving specialist:", error);
       setError("Failed to approve specialist");
@@ -194,6 +199,9 @@ const AdminDashboard = () => {
           ? { ...specialist, approval_status: "suspended" }
           : specialist
       ));
+      
+      // Refresh specialists to get updated data
+      fetchSpecialists();
     } catch (error) {
       console.error("Error suspending specialist:", error);
       setError("Failed to suspend specialist");
@@ -217,6 +225,9 @@ const AdminDashboard = () => {
           ? { ...specialist, approval_status: "approved" }
           : specialist
       ));
+      
+      // Refresh specialists to get updated data
+      fetchSpecialists();
     } catch (error) {
       console.error("Error unsuspending specialist:", error);
       setError("Failed to unsuspend specialist");
@@ -239,6 +250,22 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error deleting specialist:", error);
       setError("Failed to delete specialist");
+    }
+  };
+
+  const handleViewSpecialistDetails = async (specialistId) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await axios.get(`${API_URL}/api/admin/specialists/${specialistId}/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Set the specialist details for the modal
+      setSelectedSpecialist(response.data);
+      setShowSpecialistDetailsModal(true);
+    } catch (error) {
+      console.error("Error fetching specialist details:", error);
+      setError("Failed to fetch specialist details");
     }
   };
 
@@ -674,6 +701,11 @@ const AdminDashboard = () => {
                       <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       }`}>
+                        Availability & Profile
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        darkMode ? "text-gray-300" : "text-gray-500"
+                      }`}>
                         Status
                       </th>
                       <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
@@ -828,10 +860,33 @@ const AdminDashboard = () => {
                               <div>
                                 <div className="text-xs font-medium text-gray-500 mb-1">Documents:</div>
                                 {specialist.documents.map((doc, idx) => (
-                                  <div key={idx} className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                                    {doc.document_name} ({doc.document_type || 'N/A'})
-                                    <div className="text-xs text-gray-500">
+                                  <div key={idx} className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded mb-1">
+                                    <div className="flex justify-between items-center">
+                                      <span>{doc.document_name}</span>
+                                      <span className="text-gray-500">({doc.document_type || 'N/A'})</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mb-1">
                                       Status: {doc.verification_status || 'Pending'}
+                                    </div>
+                                    <div className="flex space-x-1">
+                                      <button
+                                        onClick={() => {
+                                          const token = localStorage.getItem('access_token');
+                                          window.open(`http://localhost:8000/api/admin/documents/${doc.id}/view?token=${token}`, '_blank');
+                                        }}
+                                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                      >
+                                        View
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const token = localStorage.getItem('access_token');
+                                          window.open(`http://localhost:8000/api/admin/documents/${doc.id}/download?token=${token}`, '_blank');
+                                        }}
+                                        className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                      >
+                                        Download
+                                      </button>
                                     </div>
                                   </div>
                                 ))}
@@ -845,11 +900,89 @@ const AdminDashboard = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            {/* Profile Completion */}
+                            {specialist.profile_completion_percentage !== undefined && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-500 mb-1">Profile Completion:</div>
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full transition-all duration-300 ${
+                                        specialist.profile_completion_percentage >= 80 
+                                          ? 'bg-green-500' 
+                                          : specialist.profile_completion_percentage >= 60 
+                                          ? 'bg-yellow-500' 
+                                          : 'bg-red-500'
+                                      }`}
+                                      style={{ width: `${specialist.profile_completion_percentage}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className={`text-xs font-medium ${
+                                    specialist.profile_completion_percentage >= 80 
+                                      ? 'text-green-600 dark:text-green-400' 
+                                      : specialist.profile_completion_percentage >= 60 
+                                      ? 'text-yellow-600 dark:text-yellow-400' 
+                                      : 'text-red-600 dark:text-red-400'
+                                  }`}>
+                                    {specialist.profile_completion_percentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Availability Slots */}
+                            {specialist.availability_slots && specialist.availability_slots.length > 0 && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-500 mb-1">Availability:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {specialist.availability_slots.slice(0, 3).map((slot, idx) => (
+                                    <span key={idx} className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                                      {slot}
+                                    </span>
+                                  ))}
+                                  {specialist.availability_slots.length > 3 && (
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                      +{specialist.availability_slots.length - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Submission Date */}
+                            {specialist.submission_date && (
+                              <div>
+                                <div className="text-xs font-medium text-gray-500 mb-1">Submitted:</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {new Date(specialist.submission_date).toLocaleDateString()}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* View Details Button */}
+                            <button
+                              onClick={() => handleViewSpecialistDetails(specialist.id)}
+                              className={`text-xs px-2 py-1 rounded transition-colors ${
+                                darkMode 
+                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                              }`}
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {specialist.approval_status === "approved" ? (
                               <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                             ) : specialist.approval_status === "rejected" ? (
                               <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                            ) : specialist.approval_status === "suspended" ? (
+                              <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
+                            ) : specialist.approval_status === "under_review" ? (
+                              <Clock className="h-5 w-5 text-blue-500 mr-2" />
                             ) : (
                               <Clock className="h-5 w-5 text-yellow-500 mr-2" />
                             )}
@@ -858,15 +991,21 @@ const AdminDashboard = () => {
                                 ? "text-green-600" 
                                 : specialist.approval_status === "rejected"
                                 ? "text-red-600"
+                                : specialist.approval_status === "suspended"
+                                ? "text-orange-600"
+                                : specialist.approval_status === "under_review"
+                                ? "text-blue-600"
                                 : "text-yellow-600"
                             }`}>
-                              {specialist.approval_status?.toUpperCase() || "PENDING"}
+                              {specialist.approval_status === "under_review" 
+                                ? "UNDER REVIEW" 
+                                : specialist.approval_status?.toUpperCase() || "PENDING"}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            {specialist.approval_status === "pending" && (
+                            {(specialist.approval_status === "pending" || specialist.approval_status === "under_review") && (
                               <>
                                 <button
                                   onClick={() => handleApproveSpecialist(specialist.id)}
@@ -1127,6 +1266,268 @@ const AdminDashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Specialist Details Modal */}
+      <Modal isOpen={showSpecialistDetailsModal} onClose={() => setShowSpecialistDetailsModal(false)}>
+        <div className={`p-6 rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}>
+          {selectedSpecialist && (
+            <>
+              <div className="flex justify-between items-start mb-6">
+                <h3 className={`text-xl font-bold ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                  Specialist Details: {selectedSpecialist.full_name}
+                </h3>
+                <button
+                  onClick={() => setShowSpecialistDetailsModal(false)}
+                  className={`p-2 rounded-full ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Profile Completion */}
+              {selectedSpecialist.profile_completion_percentage !== undefined && (
+                <div className={`mb-6 p-4 rounded-lg ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}>
+                  <h4 className={`font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Profile Completion
+                  </h4>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                      <div 
+                        className={`h-3 rounded-full transition-all duration-300 ${
+                          selectedSpecialist.profile_completion_percentage >= 80 
+                            ? 'bg-green-500' 
+                            : selectedSpecialist.profile_completion_percentage >= 60 
+                            ? 'bg-yellow-500' 
+                            : 'bg-red-500'
+                        }`}
+                        style={{ width: `${selectedSpecialist.profile_completion_percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className={`text-lg font-bold ${
+                      selectedSpecialist.profile_completion_percentage >= 80 
+                        ? 'text-green-600 dark:text-green-400' 
+                        : selectedSpecialist.profile_completion_percentage >= 60 
+                        ? 'text-yellow-600 dark:text-yellow-400' 
+                        : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {selectedSpecialist.profile_completion_percentage}%
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Personal Information */}
+              <div className={`mb-6 p-4 rounded-lg ${
+                darkMode ? "bg-gray-700" : "bg-gray-50"
+              }`}>
+                <h4 className={`font-semibold mb-3 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                  Personal Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Email:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>{selectedSpecialist.email}</p>
+                  </div>
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Phone:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>{selectedSpecialist.phone || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Address:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>{selectedSpecialist.address || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>City:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>{selectedSpecialist.city || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Clinic Name:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>{selectedSpecialist.clinic_name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Consultation Fee:</span>
+                    <p className={darkMode ? "text-white" : "text-gray-900"}>
+                      {selectedSpecialist.consultation_fee ? `PKR ${selectedSpecialist.consultation_fee}` : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+                {selectedSpecialist.bio && (
+                  <div className="mt-4">
+                    <span className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>Bio:</span>
+                    <p className={`mt-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{selectedSpecialist.bio}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Availability Schedule */}
+              {selectedSpecialist.availability_slots && selectedSpecialist.availability_slots.length > 0 && (
+                <div className={`mb-6 p-4 rounded-lg ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}>
+                  <h4 className={`font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Availability Schedule
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {selectedSpecialist.availability_slots.map((slot, idx) => (
+                      <div key={idx} className={`p-2 rounded text-center text-sm ${
+                        darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+                      }`}>
+                        {slot.time_slot}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents */}
+              {selectedSpecialist.documents && selectedSpecialist.documents.length > 0 && (
+                <div className={`mb-6 p-4 rounded-lg ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}>
+                  <h4 className={`font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Documents ({selectedSpecialist.documents.length})
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedSpecialist.documents.map((doc, idx) => (
+                      <div key={idx} className={`p-3 rounded-lg border ${
+                        darkMode ? "border-gray-600 bg-gray-800" : "border-gray-200 bg-white"
+                      }`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <h5 className={`font-medium ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}>
+                            {doc.document_type?.replace('_', ' ').toUpperCase() || 'Unknown'}
+                          </h5>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            doc.verification_status === 'approved' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              : doc.verification_status === 'rejected'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                          }`}>
+                            {doc.verification_status || 'Pending'}
+                          </span>
+                        </div>
+                        <p className={`text-sm mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-600"
+                        }`}>
+                          {doc.document_name}
+                        </p>
+                        <div className="flex justify-between items-center text-xs text-gray-500">
+                          <span>Size: {doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(2)} MB` : 'Unknown'}</span>
+                          <span>Uploaded: {new Date(doc.upload_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex space-x-2 mt-3">
+                          <button
+                            onClick={() => {
+                              const token = localStorage.getItem('access_token');
+                              window.open(`http://localhost:8000/api/admin/documents/${doc.id}/view?token=${token}`, '_blank');
+                            }}
+                            className={`px-3 py-1 rounded text-xs ${
+                              darkMode ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"
+                            }`}
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              const token = localStorage.getItem('access_token');
+                              window.open(`http://localhost:8000/api/admin/documents/${doc.id}/download?token=${token}`, '_blank');
+                            }}
+                            className={`px-3 py-1 rounded text-xs ${
+                              darkMode ? "bg-green-600 hover:bg-green-700 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+                            }`}
+                          >
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                {selectedSpecialist.approval_status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleApproveSpecialist(selectedSpecialist.id);
+                        setShowSpecialistDetailsModal(false);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleRejectSpecialist(selectedSpecialist.id);
+                        setShowSpecialistDetailsModal(false);
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {selectedSpecialist.approval_status === "approved" && (
+                  <button
+                    onClick={() => {
+                      handleSuspendSpecialist(selectedSpecialist.id);
+                      setShowSpecialistDetailsModal(false);
+                    }}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                  >
+                    Suspend
+                  </button>
+                )}
+                {selectedSpecialist.approval_status === "suspended" && (
+                  <button
+                    onClick={() => {
+                      handleUnsuspendSpecialist(selectedSpecialist.id);
+                      setShowSpecialistDetailsModal(false);
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Unsuspend
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
 
       {/* Logout Confirmation Modal */}
       <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)}>

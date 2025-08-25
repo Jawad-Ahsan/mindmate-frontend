@@ -98,6 +98,66 @@ const Login = () => {
     return isValid;
   };
 
+  const handleSpecialistRedirection = async () => {
+    try {
+      // Get detailed approval status from the new endpoint
+      const statusResponse = await axios.get(`${API_URL}/api/specialist/approval-status`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
+      });
+
+      const statusData = statusResponse.data;
+      console.log("Approval status data:", statusData);
+
+      // Handle redirection based on detailed status
+      switch (statusData.next_action) {
+        case "complete_profile":
+          toast.info("Please complete your profile to continue.", { duration: 4000 });
+          navigate("/complete-profile");
+          break;
+          
+        case "upload_documents":
+          toast.info("Please upload all required documents.", { duration: 4000 });
+          navigate("/complete-profile?tab=documents");
+          break;
+          
+        case "submit_for_approval":
+          toast.info("Ready to submit for approval.", { duration: 4000 });
+          navigate("/complete-profile?tab=documents");
+          break;
+          
+        case "pending_approval":
+          toast("Your application is under review", {
+            icon: '⏳',
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
+            duration: 4000
+          });
+          navigate("/pending-approval");
+          break;
+          
+        case "access_dashboard":
+          navigate("/specialist-dashboard");
+          break;
+          
+        case "application_rejected":
+          toast.error("Your application has been rejected. Please contact support.");
+          navigate("/application-rejected");
+          break;
+          
+        default:
+          // Fallback to complete profile
+          navigate("/complete-profile");
+      }
+    } catch (error) {
+      console.error("Failed to get approval status:", error);
+      // Fallback to complete profile page on error
+      navigate("/complete-profile");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -145,30 +205,8 @@ const Login = () => {
         localStorage.setItem("approval_status", response.data.approval_status);
         localStorage.setItem("profile_complete", response.data.profile_complete);
         
-        // Check if specialist needs to complete profile
-        if (!response.data.profile_complete) {
-          navigate("/specialist-complete-profile");
-        } else if (response.data.approval_status === "pending" || response.data.approval_status === "under_review") {
-          // Show pending approval message
-          toast(response.data.status_message || "Your application is pending approval", {
-            icon: '⏳',
-            style: {
-              borderRadius: '10px',
-              background: '#333',
-              color: '#fff',
-            },
-          });
-          navigate("/specialist-complete-profile");
-        } else if (response.data.approval_status === "approved") {
-          // Navigate to specialist dashboard
-          navigate("/specialist");
-        } else if (response.data.approval_status === "suspended") {
-          toast.error("Your account has been suspended. Please contact support.");
-          return;
-        } else {
-          // Default fallback
-          navigate("/specialist-complete-profile");
-        }
+        // Use smart redirection based on detailed approval status
+        await handleSpecialistRedirection();
       } else if (userType === "admin") {
         // Store admin info
         localStorage.setItem("user_type", "admin");

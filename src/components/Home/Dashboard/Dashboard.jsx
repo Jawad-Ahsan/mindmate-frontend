@@ -11,7 +11,7 @@ import { BookOpen, Heart, Users, MessageSquare, UserCheck } from "react-feather"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
+const Dashboard = ({ darkMode, activeChatId, onSessionUpdate, activeSidebarItem }) => {
   const { activeTab } = useParams();
   const [refreshSessions, setRefreshSessions] = useState(false);
 
@@ -48,13 +48,13 @@ const Dashboard = ({ darkMode, activeChatId, onSessionUpdate }) => {
           />
         );
       case "journal":
-        return <JournalModule darkMode={darkMode} />;
+        return <JournalModule darkMode={darkMode} activeSidebarItem={activeSidebarItem} />;
       case "exercises":
-        return <ExercisesModule darkMode={darkMode} />;
+        return <ExercisesModule darkMode={darkMode} activeSidebarItem={activeSidebarItem} />;
       case "forum":
-        return <ForumModule darkMode={darkMode} />;
+        return <ForumModule darkMode={darkMode} activeSidebarItem={activeSidebarItem} />;
       case "specialists":
-        return <SpecialistModule darkMode={darkMode} />;
+        return <SpecialistModule darkMode={darkMode} activeSidebarItem={activeSidebarItem} />;
       default:
         return null;
     }

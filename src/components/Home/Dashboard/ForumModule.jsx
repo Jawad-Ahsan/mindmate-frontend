@@ -3,8 +3,12 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import { Users } from "react-feather";
 
-const ForumModule = ({ darkMode }) => {
+const ForumModule = ({ darkMode, activeSidebarItem = "questions" }) => {
   const [questions, setQuestions] = useState([]);
+  const [myQuestions, setMyQuestions] = useState([]);
+  const [myAnswers, setMyAnswers] = useState([]);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState([]);
+  const [moderationQuestions, setModerationQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState("");
   const [newQuestionTitle, setNewQuestionTitle] = useState("");
   const [newQuestionCategory, setNewQuestionCategory] = useState("general");
@@ -19,6 +23,7 @@ const ForumModule = ({ darkMode }) => {
   const [userType, setUserType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -33,11 +38,18 @@ const ForumModule = ({ darkMode }) => {
     { value: "other", label: "Other" }
   ];
 
-  // Fetch user type and forum questions on component mount
+  // Fetch user type and forum questions on component mount and when sidebar item changes
   useEffect(() => {
     fetchUserType();
     fetchQuestions();
-  }, []);
+    
+    // Set up HTTP polling for real-time updates
+    const pollInterval = setInterval(() => {
+      fetchQuestions();
+    }, 30000); // Poll every 30 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [activeSidebarItem]);
 
   const fetchUserType = async () => {
     try {
@@ -70,27 +82,74 @@ const ForumModule = ({ darkMode }) => {
 
   const fetchQuestions = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("access_token");
-      let url = `${API_URL}/api/forum/questions`;
       
-      // Add category filter if not "all"
-      if (selectedCategory !== "all") {
-        url += `?category=${selectedCategory}`;
+      // Fetch different data based on activeSidebarItem
+      switch (activeSidebarItem) {
+        case "questions":
+          // Show all questions
+          const allQuestionsResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { category: selectedCategory !== "all" ? selectedCategory : undefined }
+          });
+          setQuestions(allQuestionsResponse.data);
+          break;
+          
+        case "answers":
+          // Show questions where user has provided answers
+          const myAnswersResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { user_answered: true, category: selectedCategory !== "all" ? selectedCategory : undefined }
+          });
+          setQuestions(myAnswersResponse.data);
+          break;
+          
+        case "bookmarks":
+          // Show bookmarked questions
+          const bookmarkedResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { bookmarked: true, category: selectedCategory !== "all" ? selectedCategory : undefined }
+          });
+          setQuestions(bookmarkedResponse.data);
+          break;
+          
+        case "moderation":
+          // Show questions that need moderation (if user is moderator)
+          if (userType === "admin" || userType === "moderator") {
+            const moderationResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+              headers: { Authorization: `Bearer ${token}` },
+              params: { needs_moderation: true, category: selectedCategory !== "all" ? selectedCategory : undefined }
+            });
+            setQuestions(moderationResponse.data);
+          } else {
+            setQuestions([]);
+          }
+          break;
+          
+        default:
+          // Default to all questions
+          const defaultResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { category: selectedCategory !== "all" ? selectedCategory : undefined }
+          });
+          setQuestions(defaultResponse.data);
+          break;
       }
       
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setQuestions(response.data);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching forum questions:", error);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Refetch questions when category filter changes
+  // Refetch questions when category filter or sidebar item changes
   useEffect(() => {
     fetchQuestions();
-  }, [selectedCategory]);
+  }, [selectedCategory, activeSidebarItem]);
 
   // Helper functions for styling
   const getCategoryColor = (category) => {
@@ -114,6 +173,42 @@ const ForumModule = ({ darkMode }) => {
       closed: "bg-gray-500"
     };
     return colors[status.toLowerCase()] || colors.open;
+  };
+
+  // Get title and description based on active sidebar item
+  const getSidebarContent = () => {
+    switch (activeSidebarItem) {
+      case "questions":
+        return {
+          title: "All Questions",
+          description: "Browse all community questions and discussions",
+          emptyMessage: "No questions found in this category"
+        };
+      case "answers":
+        return {
+          title: "My Answers",
+          description: "Questions where you have provided answers",
+          emptyMessage: "You haven't answered any questions yet"
+        };
+      case "bookmarks":
+        return {
+          title: "Bookmarked Questions",
+          description: "Your saved questions for later reference",
+          emptyMessage: "No bookmarked questions found"
+        };
+      case "moderation":
+        return {
+          title: "Moderation Queue",
+          description: "Questions that need moderation review",
+          emptyMessage: "No questions require moderation"
+        };
+      default:
+        return {
+          title: "Community Forum",
+          description: "Connect with the community",
+          emptyMessage: "No content found"
+        };
+    }
   };
 
   const fetchAnswers = async (questionId) => {
@@ -307,10 +402,10 @@ const ForumModule = ({ darkMode }) => {
               </div>
               <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                  Community Forum
+                  {getSidebarContent().title}
                 </h1>
                 <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                  Connect with others on your wellness journey
+                  {getSidebarContent().description}
                 </p>
               </div>
             </div>
@@ -522,8 +617,13 @@ const ForumModule = ({ darkMode }) => {
           {questions.length === 0 && (
             <div className="text-center py-12">
               <p className={`text-xl ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                No forum questions yet. Be the first to ask!
+                {getSidebarContent().emptyMessage}
               </p>
+              {activeSidebarItem === "questions" && (
+                <p className={`text-sm mt-2 ${darkMode ? "text-gray-500" : "text-gray-600"}`}>
+                  Be the first to ask a question!
+                </p>
+              )}
             </div>
           )}
         </motion.div>

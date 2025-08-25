@@ -1,6 +1,22 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, MessageSquare, Trash2, Star, Search } from "react-feather";
+import { 
+  Plus, 
+  MessageSquare, 
+  Trash2, 
+  Star, 
+  Search, 
+  BookOpen, 
+  Heart, 
+  Activity, 
+  Eye, 
+  TrendingUp, 
+  Bookmark, 
+  AlertCircle, 
+  Calendar, 
+  Clock,
+  BarChart
+} from "react-feather";
 import axios from "axios";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 
@@ -12,6 +28,9 @@ const Sidebar = ({
   activeChatId,
   setActiveChatId,
   refreshSessions,
+  activeTab,
+  activeSidebarItem,
+  onSidebarItemClick,
 }) => {
   const [hovered, setHovered] = useState(false);
   const [chatSessions, setChatSessions] = useState({
@@ -21,6 +40,48 @@ const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Get sidebar content based on active tab
+  const getSidebarContent = () => {
+    switch (activeTab) {
+      case "chat":
+        return [
+          { id: "new-chat", icon: <Plus size={18} />, label: "New Chat", action: createNewChat, active: activeSidebarItem === "new-chat" },
+          { id: "pinned", icon: <Star size={18} />, label: "Pinned Chats", action: null, active: activeSidebarItem === "pinned" },
+          { id: "recent", icon: <MessageSquare size={18} />, label: "Recent Chats", action: null, active: activeSidebarItem === "recent" },
+        ];
+      case "journal":
+        return [
+          { id: "new-entry", icon: <Plus size={18} />, label: "New Entry", action: null, active: activeSidebarItem === "new-entry" },
+          { id: "today", icon: <BookOpen size={18} />, label: "Today's Entries", action: null, active: activeSidebarItem === "today" },
+          { id: "mood-tracker", icon: <Heart size={18} />, label: "Mood Tracker", action: null, active: activeSidebarItem === "mood-tracker" },
+          { id: "insights", icon: <BarChart size={18} />, label: "Insights", action: null, active: activeSidebarItem === "insights" },
+        ];
+      case "exercises":
+        return [
+          { id: "breathing", icon: <Activity size={18} />, label: "Breathing Exercises", action: null, active: activeSidebarItem === "breathing" },
+          { id: "meditation", icon: <Heart size={18} />, label: "Meditation", action: null, active: activeSidebarItem === "meditation" },
+          { id: "mindfulness", icon: <Eye size={18} />, label: "Mindfulness", action: null, active: activeSidebarItem === "mindfulness" },
+          { id: "progress", icon: <TrendingUp size={18} />, label: "Progress Tracker", action: null, active: activeSidebarItem === "progress" },
+        ];
+      case "forum":
+        return [
+          { id: "questions", icon: <MessageSquare size={18} />, label: "My Questions", action: null, active: activeSidebarItem === "questions" },
+          { id: "answers", icon: <MessageSquare size={18} />, label: "My Answers", action: null, active: activeSidebarItem === "answers" },
+          { id: "bookmarks", icon: <Bookmark size={18} />, label: "Bookmarks", action: null, active: activeSidebarItem === "bookmarks" },
+          { id: "moderation", icon: <AlertCircle size={18} />, label: "Moderation", action: null, active: activeSidebarItem === "moderation" },
+        ];
+      case "specialists":
+        return [
+          { id: "search", icon: <Search size={18} />, label: "Search Specialists", action: null, active: activeSidebarItem === "search" },
+          { id: "favorites", icon: <Heart size={18} />, label: "Favorites", action: null, active: activeSidebarItem === "favorites" },
+          { id: "appointments", icon: <Calendar size={18} />, label: "My Appointments", action: null, active: activeSidebarItem === "appointments" },
+          { id: "history", icon: <Clock size={18} />, label: "Session History", action: null, active: activeSidebarItem === "history" },
+        ];
+      default:
+        return [];
+    }
+  };
 
   useEffect(() => {
     const fetchChatSessions = async () => {
@@ -200,124 +261,172 @@ const Sidebar = ({
         darkMode ? "bg-gray-800" : "bg-white"
       } border-r ${darkMode ? "border-gray-700" : "border-gray-200"}`}
     >
-      {/* New Chat Button */}
-      <div className="p-4 border-b border-gray-700">
-        <button
-          onClick={createNewChat}
-          className={`flex items-center justify-center w-full p-2 rounded-md ${
-            darkMode
-              ? "hover:bg-gray-700 text-gray-300"
-              : "hover:bg-gray-100 text-gray-700"
-          } transition-colors`}
-          aria-label="New chat"
-        >
-          <Plus size={18} className="flex-shrink-0" />
-          {hovered && <span className="ml-2 whitespace-nowrap">New Chat</span>}
-        </button>
-      </div>
-
-      {/* Search Bar */}
-      {hovered && (
-        <div className="px-3 py-2">
-          <div
-            className={`relative rounded-md ${
-              darkMode ? "bg-gray-700" : "bg-gray-100"
-            }`}
-          >
-            <Search
-              size={14}
-              className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                darkMode ? "text-gray-400" : "text-gray-500"
-              }`}
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              placeholder="Search chats..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full py-2 pl-9 pr-3 bg-transparent focus:outline-none ${
+      {/* Dynamic Sidebar Content */}
+      {activeTab === "chat" ? (
+        <>
+          {/* New Chat Button */}
+          <div className="p-4 border-b border-gray-700">
+            <button
+              onClick={createNewChat}
+              className={`flex items-center justify-center w-full p-2 rounded-md ${
                 darkMode
-                  ? "text-white placeholder-gray-400"
-                  : "text-gray-800 placeholder-gray-500"
-              }`}
-              aria-label="Search chats"
-            />
+                  ? "hover:bg-gray-700 text-gray-300"
+                  : "hover:bg-gray-100 text-gray-700"
+              } transition-colors`}
+              aria-label="New chat"
+            >
+              <Plus size={18} className="flex-shrink-0" />
+              {hovered && <span className="ml-2 whitespace-nowrap">New Chat</span>}
+            </button>
           </div>
+
+          {/* Search Bar */}
+          {hovered && (
+            <div className="px-3 py-2">
+              <div
+                className={`relative rounded-md ${
+                  darkMode ? "bg-gray-700" : "bg-gray-100"
+                }`}
+              >
+                <Search
+                  size={14}
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  placeholder="Search chats..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full py-2 pl-9 pr-3 bg-transparent focus:outline-none ${
+                    darkMode
+                      ? "text-white placeholder-gray-400"
+                      : "text-gray-800 placeholder-gray-500"
+                  }`}
+                  aria-label="Search chats"
+                />
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        /* Show tab-specific sidebar options */
+        <div className="p-4">
+          <div className={`text-sm font-medium mb-3 ${
+            darkMode ? "text-gray-300" : "text-gray-600"
+          }`}>
+            {activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : "Options"}
+          </div>
+          {getSidebarContent().map((item) => (
+            <div
+              key={item.id}
+              className={`mb-2 flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
+                item.active
+                  ? darkMode
+                    ? "bg-gray-700 text-white"
+                    : "bg-gray-200 text-gray-900"
+                  : darkMode
+                  ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+              onClick={() => {
+                if (item.action) {
+                  item.action();
+                } else if (onSidebarItemClick) {
+                  onSidebarItemClick(item.id);
+                }
+              }}
+            >
+              <div className="flex-shrink-0">{item.icon}</div>
+              {hovered && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="ml-3 text-sm font-medium"
+                >
+                  {item.label}
+                </motion.span>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Chat History */}
-      <nav className="flex-1 overflow-y-auto py-2">
-        {filteredPinned.length > 0 && hovered && (
-          <div className="px-3 py-1">
-            <h3
-              className={`text-xs font-medium ${
+      {/* Chat History - Only show when in chat tab */}
+      {activeTab === "chat" && (
+        <nav className="flex-1 overflow-y-auto py-2">
+          {filteredPinned.length > 0 && hovered && (
+            <div className="px-3 py-1">
+              <h3
+                className={`text-xs font-medium ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                } uppercase tracking-wider`}
+              >
+                Pinned
+              </h3>
+            </div>
+          )}
+
+          {filteredPinned.length > 0 && (
+            <div className="mb-4">
+              {filteredPinned.map((session) => (
+                <ChatSessionItem
+                  key={session.id}
+                  session={session}
+                  hovered={hovered}
+                  darkMode={darkMode}
+                  isActive={activeChatId === session.id}
+                  onClick={() => setActiveChatId && setActiveChatId(session.id)}
+                  onDelete={(e) => deleteChatSession(session.id, e)}
+                  onTogglePin={(e) => togglePinSession(session.id, e)}
+                  isPinned={true}
+                />
+              ))}
+            </div>
+          )}
+
+          {Object.entries(groupedOtherSessions).map(([groupName, sessions]) => (
+            <div key={groupName}>
+              {hovered && (
+                <div className="px-3 py-1">
+                  <h3
+                    className={`text-xs font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    } uppercase tracking-wider`}
+                  >
+                    {groupName}
+                  </h3>
+                </div>
+              )}
+              {sessions.map((session) => (
+                <ChatSessionItem
+                  key={session.id}
+                  session={session}
+                  hovered={hovered}
+                  darkMode={darkMode}
+                  isActive={activeChatId === session.id}
+                  onClick={() => setActiveChatId && setActiveChatId(session.id)}
+                  onDelete={(e) => deleteChatSession(session.id, e)}
+                  onTogglePin={(e) => togglePinSession(session.id, e)}
+                  isPinned={false}
+                />
+              ))}
+            </div>
+          ))}
+
+          {filteredPinned.length === 0 && filteredOther.length === 0 && (
+            <div
+              className={`p-4 text-center ${
                 darkMode ? "text-gray-400" : "text-gray-500"
-              } uppercase tracking-wider`}
+              }`}
             >
-              Pinned
-            </h3>
-          </div>
-        )}
-
-        {filteredPinned.length > 0 && (
-          <div className="mb-4">
-            {filteredPinned.map((session) => (
-              <ChatSessionItem
-                key={session.id}
-                session={session}
-                hovered={hovered}
-                darkMode={darkMode}
-                isActive={activeChatId === session.id}
-                onClick={() => setActiveChatId && setActiveChatId(session.id)}
-                onDelete={(e) => deleteChatSession(session.id, e)}
-                onTogglePin={(e) => togglePinSession(session.id, e)}
-                isPinned={true}
-              />
-            ))}
-          </div>
-        )}
-
-        {Object.entries(groupedOtherSessions).map(([groupName, sessions]) => (
-          <div key={groupName}>
-            {hovered && (
-              <div className="px-3 py-1">
-                <h3
-                  className={`text-xs font-medium ${
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  } uppercase tracking-wider`}
-                >
-                  {groupName}
-                </h3>
-              </div>
-            )}
-            {sessions.map((session) => (
-              <ChatSessionItem
-                key={session.id}
-                session={session}
-                hovered={hovered}
-                darkMode={darkMode}
-                isActive={activeChatId === session.id}
-                onClick={() => setActiveChatId && setActiveChatId(session.id)}
-                onDelete={(e) => deleteChatSession(session.id, e)}
-                onTogglePin={(e) => togglePinSession(session.id, e)}
-                isPinned={false}
-              />
-            ))}
-          </div>
-        ))}
-
-        {filteredPinned.length === 0 && filteredOther.length === 0 && (
-          <div
-            className={`p-4 text-center ${
-              darkMode ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            {searchQuery ? "No matching chats" : "No chat sessions yet"}
-          </div>
-        )}
-      </nav>
+              {searchQuery ? "No matching chats" : "No chat sessions yet"}
+            </div>
+          )}
+        </nav>
+      )}
     </motion.aside>
   );
 };

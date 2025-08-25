@@ -19,31 +19,56 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const SpecialistAppointmentsModule = ({ darkMode }) => {
+const SpecialistAppointmentsModule = ({ darkMode, activeSidebarItem = "all" }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const appointmentStatuses = [
-    { value: "all", label: "All", color: "gray" },
-    { value: "pending_approval", label: "Pending Approval", color: "yellow" },
-    { value: "scheduled", label: "Scheduled", color: "blue" },
-    { value: "confirmed", label: "Confirmed", color: "green" },
-    { value: "completed", label: "Completed", color: "purple" },
-    { value: "cancelled", label: "Cancelled", color: "red" }
-  ];
+
+
 
   const fetchAppointments = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      const response = await axios.get(`${API_URL}/api/specialist-sma/my-appointments`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      
+      // Map sidebar items to status filters
+      let statusFilter = "all";
+      switch (activeSidebarItem) {
+        case "scheduled":
+          statusFilter = "scheduled";
+          break;
+        case "completed":
+          statusFilter = "completed";
+          break;
+        case "cancelled":
+          statusFilter = "cancelled";
+          break;
+        default:
+          statusFilter = "all";
+      }
+
+      const requestData = {
+        status: statusFilter,
+        date_from: null,
+        date_to: null,
+        patient_type: "all",
+        page: 1,
+        size: 20
+      };
+
+      const response = await axios.post(
+        `${API_URL}/api/specialist/appointments/filter`,
+        requestData,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       setAppointments(response.data.appointments || []);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching appointments:", error);
     } finally {
@@ -53,14 +78,20 @@ const SpecialistAppointmentsModule = ({ darkMode }) => {
 
   useEffect(() => {
     fetchAppointments();
-  }, []);
+    
+    // Set up HTTP polling for real-time updates
+    const pollInterval = setInterval(() => {
+      fetchAppointments();
+    }, 30000); // Poll every 30 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [activeSidebarItem]);
 
   const updateAppointmentStatus = async (appointmentId, newStatus) => {
     try {
       const token = localStorage.getItem("access_token");
-      await axios.post(`${API_URL}/api/specialist-sma/update-appointment-status`, {
-        appointment_id: appointmentId,
-        status: newStatus
+      await axios.put(`${API_URL}/api/specialist/appointments/${appointmentId}/status`, {
+        new_status: newStatus
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -121,9 +152,8 @@ const SpecialistAppointmentsModule = ({ darkMode }) => {
     });
   };
 
-  const filteredAppointments = filterStatus === "all" 
-    ? appointments 
-    : appointments.filter(apt => apt.status === filterStatus);
+  // Backend now handles filtering, so we just use all appointments
+  const filteredAppointments = appointments;
 
   const renderAppointmentCard = (appointment) => (
     <motion.div
@@ -276,28 +306,49 @@ const SpecialistAppointmentsModule = ({ darkMode }) => {
         <p className={`text-lg ${
           darkMode ? "text-gray-400" : "text-gray-600"
         }`}>
-          Manage your patient appointments and sessions
+          {activeSidebarItem === "all" ? "All Appointments" :
+           activeSidebarItem === "scheduled" ? "Scheduled Appointments" :
+           activeSidebarItem === "completed" ? "Completed Appointments" :
+           activeSidebarItem === "cancelled" ? "Cancelled Appointments" : "All Appointments"}
         </p>
       </div>
 
       {/* Appointments List */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-xl font-semibold ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}>
-            {loading ? "Loading..." : `${filteredAppointments.length} appointments`}
-          </h2>
+          <div>
+            <h2 className={`text-xl font-semibold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}>
+              {loading ? "Loading..." : `${filteredAppointments.length} appointments`}
+            </h2>
+            {lastUpdated && (
+              <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
           
           <button
             onClick={fetchAppointments}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            disabled={loading}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
               darkMode
-                ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
             }`}
           >
-            Refresh
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                <span>Refreshing...</span>
+              </>
+            ) : (
+              <>
+                <div className="w-4 h-4"></div>
+                <span>Refresh</span>
+              </>
+            )}
           </button>
         </div>
 
