@@ -235,3 +235,4 @@ const SpecialistApplicationRejected = () => {
 };
 
 export default SpecialistApplicationRejected;
+
