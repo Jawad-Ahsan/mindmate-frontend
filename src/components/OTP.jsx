@@ -21,6 +21,7 @@ const OTP = () => {
   // Get email and userType from location state
   const email = location.state?.email || "your.email@example.com";
   const userType = location.state?.userType || "patient";
+  const isPasswordReset = location.state?.isPasswordReset || false;
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -89,29 +90,53 @@ const OTP = () => {
     setIsSubmitting(true);
 
     try {
-      // **IMPORTANT**: Replace with your actual API endpoint for OTP verification
-      await axios.post(`${API_URL}/api/auth/verify-email`, {
-        email,
-        otp: enteredOtp,
-        usertype: userType,
-      });
+      let response;
+      
+      if (isPasswordReset) {
+        // Call password reset OTP verification endpoint
+        response = await axios.post(`${API_URL}/api/auth/verify-reset-otp`, {
+          email,
+          user_type: userType,
+          otp: enteredOtp,
+        });
+        
+        toast.success("OTP verified successfully!");
+        setSuccess("Redirecting to password reset form...");
+        
+        setTimeout(() => {
+          navigate("/reset-password", {
+            state: {
+              resetToken: response.data.reset_token,
+              email: email,
+              userType: userType
+            }
+          });
+        }, 2000);
+      } else {
+        // Call regular email verification endpoint
+        response = await axios.post(`${API_URL}/api/auth/verify-email`, {
+          email,
+          otp: enteredOtp,
+          usertype: userType,
+        });
 
-      toast.success("Verification successful!");
-      setSuccess("You will be redirected shortly.");
+        toast.success("Verification successful!");
+        setSuccess("You will be redirected shortly.");
 
-      setTimeout(() => {
-        // Check if user came from login or signup
-        if (location.state?.fromLogin) {
-          navigate("/home");
-        } else {
-          // Navigate based on user type
-          if (userType === "specialist") {
-            navigate("/login"); // Specialist goes to login after verification to complete profile
+        setTimeout(() => {
+          // Check if user came from login or signup
+          if (location.state?.fromLogin) {
+            navigate("/home");
           } else {
-            navigate("/mandatory-questionnaire"); // Patient goes to questionnaire
+            // Navigate based on user type
+            if (userType === "specialist") {
+              navigate("/login"); // Specialist goes to login after verification to complete profile
+            } else {
+              navigate("/mandatory-questionnaire"); // Patient goes to questionnaire
+            }
           }
-        }
-      }, 2000);
+        }, 2000);
+      }
     } catch (err) {
       const errorMessage =
         err.response?.data?.detail ||
@@ -129,8 +154,17 @@ const OTP = () => {
     setSuccess("");
 
     try {
-      // **IMPORTANT**: Replace with your actual API endpoint for resending OTP
-      await axios.post(`${API_URL}/api/auth/resend-otp`, { email, usertype: userType });
+      let endpoint, payload;
+      
+      if (isPasswordReset) {
+        endpoint = `${API_URL}/api/auth/resend-reset-otp`;
+        payload = { email, user_type: userType };
+      } else {
+        endpoint = `${API_URL}/api/auth/resend-otp`;
+        payload = { email, usertype: userType };
+      }
+      
+      await axios.post(endpoint, payload);
 
       toast.success("A new OTP has been sent to your email.");
       setSuccess("A new OTP has been sent.");
@@ -190,12 +224,19 @@ const OTP = () => {
                 darkMode ? "text-indigo-400" : "text-indigo-600"
               }`}
             >
-              {location.state?.fromLogin ? "Complete Your Account" : "Verify Your Account"}
+              {isPasswordReset 
+                ? "Verify Password Reset OTP" 
+                : location.state?.fromLogin 
+                  ? "Complete Your Account" 
+                  : "Verify Your Account"
+              }
             </motion.h1>
             <p className={darkMode ? "text-gray-300" : "text-gray-600"}>
-              {location.state?.fromLogin 
-                ? "Please verify your email to complete your account setup. An OTP has been sent to "
-                : "An OTP has been sent to "
+              {isPasswordReset
+                ? "Please enter the OTP sent to your email to reset your password. OTP sent to "
+                : location.state?.fromLogin 
+                  ? "Please verify your email to complete your account setup. An OTP has been sent to "
+                  : "An OTP has been sent to "
               }
               <span className="font-semibold">{email}</span>
             </p>

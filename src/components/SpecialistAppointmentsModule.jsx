@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { toast } from "react-hot-toast";
 import {
   Calendar,
   Clock,
@@ -98,8 +99,25 @@ const SpecialistAppointmentsModule = ({ darkMode, activeSidebarItem = "all" }) =
 
       // Refresh appointments
       fetchAppointments();
+      toast.success(`Appointment status updated to ${newStatus}`);
     } catch (error) {
       console.error("Error updating appointment status:", error);
+      
+      // Show user-friendly error message
+      let errorMessage = "Failed to update appointment status";
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.status === 400) {
+        errorMessage = "Invalid status transition. Please check the appointment's current status.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "Please log in again to continue.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "You don't have permission to update this appointment.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Appointment not found.";
+      }
+      
+      toast.error(errorMessage);
     }
   };
 

@@ -7,6 +7,7 @@ import SignUp from "./components/SignUp";
 import OTP from "./components/OTP"; // Import the new OTP component
 import MandatoryQuestionnaire from "./components/MandatoryQuestionnaire";
 import ForgotPassword from "./components/ForgotPassword";
+import PasswordResetForm from "./components/PasswordResetForm";
 import DevTeam from "./components/DevTeam";
 import OAuthSuccess from "./components/OAuthSuccess";
 import AdminDashboard from "./components/AdminDashboard";
@@ -25,9 +26,9 @@ function App() {
         <Route path="/home/*" element={<MainLayout />} />
         <Route path="/login" element={<LogIn />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/otp" element={<OTP />} />{" "}
-        {/* Add the new route for OTP */}
+        <Route path="/otp" element={<OTP />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<PasswordResetForm />} />
         <Route path="/dev-team" element={<DevTeam />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
         <Route

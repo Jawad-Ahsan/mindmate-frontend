@@ -748,6 +748,406 @@ const AdminDashboard = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Specialist Details Modal */}
+      <Modal isOpen={showSpecialistDetailsModal} onClose={() => setShowSpecialistDetailsModal(false)}>
+        <div
+          className={`p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}
+        >
+          {selectedSpecialist && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3
+                    className={`text-2xl font-bold mb-2 ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Specialist Details
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    ID: {selectedSpecialist.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSpecialistDetailsModal(false)}
+                  className={`p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                    darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <XCircle size={24} />
+                </button>
+              </div>
+
+              {/* Basic Information */}
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+              }`}>
+                <h4 className={`text-lg font-semibold mb-3 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                  Basic Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Full Name</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.full_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Email</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.email}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Phone</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.phone || "Not provided"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Specialist Type</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.specialist_type || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Years of Experience</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.years_experience || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Consultation Fee</p>
+                    <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                      {selectedSpecialist.consultation_fee ? `$${selectedSpecialist.consultation_fee}` : "Not set"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address & Contact */}
+              {(selectedSpecialist.address || selectedSpecialist.city || selectedSpecialist.clinic_name) && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+                }`}>
+                  <h4 className={`text-lg font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Address & Contact
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedSpecialist.clinic_name && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>Clinic Name</p>
+                        <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {selectedSpecialist.clinic_name}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSpecialist.address && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>Address</p>
+                        <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {selectedSpecialist.address}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSpecialist.city && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>City</p>
+                        <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {selectedSpecialist.city}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Specializations */}
+              {selectedSpecialist.specializations && selectedSpecialist.specializations.length > 0 && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+                }`}>
+                  <h4 className={`text-lg font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Specializations
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedSpecialist.specializations.map((spec, index) => (
+                      <div key={index} className={`p-3 rounded-lg ${
+                        darkMode ? "bg-gray-600" : "bg-white"
+                      } border ${
+                        darkMode ? "border-gray-500" : "border-gray-200"
+                      }`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className={`font-medium ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}>
+                              {spec.specialization}
+                            </p>
+                            <p className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}>
+                              {spec.years_of_experience_in_specialization} years experience
+                            </p>
+                          </div>
+                          {spec.is_primary_specialization && (
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              darkMode ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-800"
+                            }`}>
+                              Primary
+                            </span>
+                          )}
+                        </div>
+                        {spec.certification_date && (
+                          <p className={`text-xs mt-1 ${
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }`}>
+                            Certified: {new Date(spec.certification_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents */}
+              {selectedSpecialist.documents && selectedSpecialist.documents.length > 0 && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+                }`}>
+                  <h4 className={`text-lg font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Documents
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedSpecialist.documents.map((doc, index) => (
+                      <div key={index} className={`p-3 rounded-lg ${
+                        darkMode ? "bg-gray-600" : "bg-white"
+                      } border ${
+                        darkMode ? "border-gray-500" : "border-gray-200"
+                      }`}>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className={`font-medium ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}>
+                              {doc.document_name}
+                            </p>
+                            <p className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}>
+                              Type: {doc.document_type}
+                            </p>
+                            <p className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}>
+                              Uploaded: {new Date(doc.upload_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            doc.verification_status === "verified" 
+                              ? darkMode ? "bg-green-600 text-white" : "bg-green-100 text-green-800"
+                              : doc.verification_status === "pending"
+                              ? darkMode ? "bg-yellow-600 text-white" : "bg-yellow-100 text-yellow-800"
+                              : darkMode ? "bg-red-600 text-white" : "bg-red-100 text-red-800"
+                          }`}>
+                            {doc.verification_status || "Pending"}
+                          </span>
+                        </div>
+                        {doc.verification_notes && (
+                          <p className={`text-xs mt-2 p-2 rounded ${
+                            darkMode ? "bg-gray-500 text-gray-300" : "bg-gray-100 text-gray-700"
+                          }`}>
+                            Notes: {doc.verification_notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Availability */}
+              {selectedSpecialist.availability_slots && selectedSpecialist.availability_slots.length > 0 && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+                }`}>
+                  <h4 className={`text-lg font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Availability Slots
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {selectedSpecialist.availability_slots.map((slot, index) => (
+                      <div key={index} className={`p-2 rounded-lg text-center ${
+                        darkMode ? "bg-gray-600 text-white" : "bg-white text-gray-900"
+                      } border ${
+                        darkMode ? "border-gray-500" : "border-gray-200"
+                      }`}>
+                        <p className="text-sm font-medium">{slot.display}</p>
+                        <p className={`text-xs ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>
+                          {slot.time_slot}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Profile Completion & Status */}
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+              }`}>
+                <h4 className={`text-lg font-semibold mb-3 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                  Profile Status
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Profile Completion</p>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${selectedSpecialist.profile_completion_percentage || 0}%` }}
+                        ></div>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}>
+                        {selectedSpecialist.profile_completion_percentage || 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>Approval Status</p>
+                    <span className={`px-3 py-1 text-sm rounded-full ${
+                      selectedSpecialist.approval_status === "approved"
+                        ? darkMode ? "bg-green-600 text-white" : "bg-green-100 text-green-800"
+                        : selectedSpecialist.approval_status === "pending"
+                        ? darkMode ? "bg-yellow-600 text-white" : "bg-yellow-100 text-yellow-800"
+                        : selectedSpecialist.approval_status === "rejected"
+                        ? darkMode ? "bg-red-600 text-white" : "bg-red-100 text-red-800"
+                        : selectedSpecialist.approval_status === "suspended"
+                        ? darkMode ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-800"
+                        : darkMode ? "bg-gray-600 text-white" : "bg-gray-100 text-gray-800"
+                    }`}>
+                      {selectedSpecialist.approval_status?.toUpperCase() || "PENDING"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              {(selectedSpecialist.bio || selectedSpecialist.languages_spoken || selectedSpecialist.website_url) && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"
+                }`}>
+                  <h4 className={`text-lg font-semibold mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                    Additional Information
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedSpecialist.bio && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>Bio</p>
+                        <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {selectedSpecialist.bio}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSpecialist.languages_spoken && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>Languages Spoken</p>
+                        <p className={`${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {selectedSpecialist.languages_spoken}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSpecialist.website_url && (
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>Website</p>
+                        <a 
+                          href={selectedSpecialist.website_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={`text-blue-600 hover:text-blue-800 underline ${
+                            darkMode ? "text-blue-400 hover:text-blue-300" : ""
+                          }`}
+                        >
+                          {selectedSpecialist.website_url}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setShowSpecialistDetailsModal(false)}
+                  className={`px-6 py-2 rounded-lg ${
+                    darkMode
+                      ? "bg-gray-600 hover:bg-gray-500 text-white"
+                      : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                  }`}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

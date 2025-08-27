@@ -1,13 +1,20 @@
-import { useState, useEffect } from "react"; // Make sure useEffect is imported
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Sun, Moon, ChevronLeft } from "react-feather";
+import { Mail, Sun, Moon, ChevronLeft, AlertCircle } from "react-feather";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
+  const [userType, setUserType] = useState("patient");
   const [darkMode, setDarkMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [errors, setErrors] = useState({ email: "" });
+  const [errors, setErrors] = useState({ email: "", userType: "" });
+  const [formError, setFormError] = useState("");
   const navigate = useNavigate();
 
   // Initialize dark mode from localStorage
@@ -23,7 +30,7 @@ const ForgotPassword = () => {
   };
 
   const validate = () => {
-    const newErrors = { email: "" };
+    const newErrors = { email: "", userType: "" };
     let isValid = true;
 
     if (!email) {
@@ -34,17 +41,39 @@ const ForgotPassword = () => {
       isValid = false;
     }
 
+    if (!userType) {
+      newErrors.userType = "User type is required";
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      // Simulate API call
-      setTimeout(() => {
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    setFormError("");
+    setErrors({ email: "", userType: "" });
+
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/request-password-reset`, {
+        email: email.trim(),
+        user_type: userType
+      });
+
+      if (response.data.success) {
         setIsSubmitted(true);
-      }, 1000);
+        toast.success("Password reset instructions sent to your email!");
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || "Failed to send password reset. Please try again.";
+      setFormError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -111,12 +140,70 @@ const ForgotPassword = () => {
             <p className={darkMode ? "text-gray-300" : "text-gray-600"}>
               {isSubmitted
                 ? "Check your email for reset instructions"
-                : "Enter your email to receive a password reset link"}
+                : "Enter your email to receive a password reset OTP"}
             </p>
           </div>
 
+          {/* Form Error Message */}
+          <AnimatePresence>
+            {formError && (
+              <motion.div
+                className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                  darkMode
+                    ? "bg-red-900/30 text-red-300"
+                    : "bg-red-100 text-red-700"
+                }`}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <AlertCircle size={18} />
+                <span>{formError}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {!isSubmitted ? (
             <motion.form onSubmit={handleSubmit}>
+              {/* User Type Field */}
+              <div className="mb-6">
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  User Type
+                </label>
+                <select
+                  className={`w-full py-2 px-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                    errors.userType
+                      ? "border-red-500"
+                      : darkMode
+                      ? "border-gray-600 bg-gray-800 text-white focus:ring-indigo-400"
+                      : "border-gray-300 bg-white text-gray-900 focus:ring-indigo-500"
+                  }`}
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value)}
+                  disabled={isSubmitting}
+                >
+                  <option value="patient">Patient</option>
+                  <option value="specialist">Specialist</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <AnimatePresence>
+                  {errors.userType && (
+                    <motion.p
+                      className="text-red-500 text-xs mt-1"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {errors.userType}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {/* Email Field */}
               <div className="mb-6">
                 <label
@@ -142,6 +229,7 @@ const ForgotPassword = () => {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <AnimatePresence>
@@ -160,16 +248,25 @@ const ForgotPassword = () => {
 
               {/* Submit Button */}
               <motion.button
-                className={`w-full font-medium py-2 px-4 rounded-lg transition duration-200 ${
+                className={`w-full font-medium py-2 px-4 rounded-lg transition duration-200 flex justify-center items-center ${
                   darkMode
                     ? "bg-indigo-500 hover:bg-indigo-600"
                     : "bg-indigo-600 hover:bg-indigo-700"
-                } text-white`}
+                } text-white disabled:opacity-70`}
                 type="submit"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                disabled={isSubmitting}
               >
-                Send Reset Link
+                {isSubmitting ? (
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="h-5 w-5 border-2 border-white border-t-transparent rounded-full"
+                  />
+                ) : (
+                  "Send Reset OTP"
+                )}
               </motion.button>
             </motion.form>
           ) : (
@@ -182,9 +279,27 @@ const ForgotPassword = () => {
               }`}
             >
               <p className={darkMode ? "text-gray-200" : "text-blue-800"}>
-                We've sent an email to {email} with instructions to reset your
+                We've sent an OTP to {email} with instructions to reset your
                 password.
               </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => navigate("/otp", { 
+                    state: { 
+                      email, 
+                      userType, 
+                      isPasswordReset: true 
+                    } 
+                  })}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    darkMode
+                      ? "bg-indigo-500 hover:bg-indigo-600 text-white"
+                      : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  }`}
+                >
+                  Enter OTP
+                </button>
+              </div>
             </motion.div>
           )}
         </div>
