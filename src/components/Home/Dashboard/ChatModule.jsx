@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Mic, Send, MessageSquare } from "react-feather";
+import { Plus, Mic, Send, MessageSquare, Clipboard } from "react-feather";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -9,6 +9,7 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [assessmentStarted, setAssessmentStarted] = useState(false);
   const messagesEndRef = useRef(null);
   const showSendButton = newMessage.trim() !== "";
 
@@ -18,22 +19,29 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
       return;
     }
 
-    const fetchSessionMessages = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const response = await axios.get(
-          `${API_URL}/api/chat/sessions/${sessionId}/messages`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setMessages(response.data.messages || []);
-      } catch (error) {
+      const fetchSessionMessages = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await axios.get(
+        `${API_URL}/api/chat/sessions/${sessionId}/messages`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMessages(response.data.messages || []);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // Session not found, clear messages and show empty state
+        setMessages([]);
+        console.log("Chat session not found, starting fresh");
+      } else {
+        console.error("Error fetching session messages:", error);
         setMessages([]);
       }
-    };
+    }
+  };
 
     fetchSessionMessages();
   }, [sessionId]);
@@ -41,6 +49,47 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  const startAssessment = async () => {
+    if (!sessionId) return;
+    
+    try {
+      const token = localStorage.getItem("access_token");
+      const { data } = await axios.post(
+        `${API_URL}/api/chat/start-assessment`,
+        {
+          session_id: sessionId
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      if (data?.response) {
+        // Add AI message about starting assessment
+        const aiMsg = {
+          id: Date.now(),
+          text: data.response,
+          sender: "ai",
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        setAssessmentStarted(true);
+      }
+    } catch (error) {
+      console.error("Failed to start assessment:", error);
+      // Add error message
+      const errorMsg = {
+        id: Date.now(),
+        text: "Sorry, I couldn't start the assessment right now. Please try again.",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!showSendButton || !sessionId) return;
@@ -144,7 +193,35 @@ const ChatModule = ({ darkMode, sessionId, onSessionUpdate }) => {
                 }`} />
               </div>
               <p className="text-lg font-medium mb-2">Start a new conversation</p>
-              <p className="text-sm opacity-75">Share your thoughts with MindMate AI</p>
+              <p className="text-sm opacity-75 mb-6">Share your thoughts with MindMate AI</p>
+              
+              {/* Assessment Start Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startAssessment}
+                disabled={assessmentStarted}
+                className={`inline-flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  assessmentStarted
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : darkMode
+                    ? "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg"
+                    : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg"
+                }`}
+              >
+                <Clipboard className="w-5 h-5" />
+                <span>{assessmentStarted ? "Assessment Started" : "Start Mental Health Assessment"}</span>
+              </motion.button>
+              
+              {assessmentStarted && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm mt-3 text-green-500"
+                >
+                  Assessment started! The AI will now guide you through a comprehensive evaluation.
+                </motion.p>
+              )}
             </motion.div>
           )}
 

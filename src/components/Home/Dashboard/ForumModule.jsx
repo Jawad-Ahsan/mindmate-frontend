@@ -88,21 +88,15 @@ const ForumModule = ({ darkMode, activeSidebarItem = "questions" }) => {
       // Fetch different data based on activeSidebarItem
       switch (activeSidebarItem) {
         case "questions":
-          // Show all questions
-          const allQuestionsResponse = await axios.get(`${API_URL}/api/forum/questions`, {
+          // Show questions asked by current user
+          const myQuestionsResponse = await axios.get(`${API_URL}/api/forum/questions`, {
             headers: { Authorization: `Bearer ${token}` },
-            params: { category: selectedCategory !== "all" ? selectedCategory : undefined }
+            params: { 
+              patient_id: currentUserId, 
+              category: selectedCategory !== "all" ? selectedCategory : undefined 
+            }
           });
-          setQuestions(allQuestionsResponse.data);
-          break;
-          
-        case "answers":
-          // Show questions where user has provided answers
-          const myAnswersResponse = await axios.get(`${API_URL}/api/forum/questions`, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { user_answered: true, category: selectedCategory !== "all" ? selectedCategory : undefined }
-          });
-          setQuestions(myAnswersResponse.data);
+          setQuestions(myQuestionsResponse.data);
           break;
           
         case "bookmarks":
@@ -180,33 +174,27 @@ const ForumModule = ({ darkMode, activeSidebarItem = "questions" }) => {
     switch (activeSidebarItem) {
       case "questions":
         return {
-          title: "All Questions",
-          description: "Browse all community questions and discussions",
-          emptyMessage: "No questions found in this category"
-        };
-      case "answers":
-        return {
-          title: "My Answers",
-          description: "Questions where you have provided answers",
-          emptyMessage: "You haven't answered any questions yet"
+          title: "My Questions",
+          description: "Questions you have asked in the forum",
+          emptyMessage: "You haven't asked any questions yet"
         };
       case "bookmarks":
         return {
           title: "Bookmarked Questions",
-          description: "Your saved questions for later reference",
+          description: "Questions you have bookmarked for later",
           emptyMessage: "No bookmarked questions found"
         };
       case "moderation":
         return {
           title: "Moderation Queue",
           description: "Questions that need moderation review",
-          emptyMessage: "No questions require moderation"
+          emptyMessage: "No questions need moderation"
         };
       default:
         return {
-          title: "Community Forum",
-          description: "Connect with the community",
-          emptyMessage: "No content found"
+          title: "All Questions",
+          description: "Browse all forum questions",
+          emptyMessage: "No questions found"
         };
     }
   };
@@ -549,8 +537,8 @@ const ForumModule = ({ darkMode, activeSidebarItem = "questions" }) => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-2">{question.title}</h3>
-                    <p className={`text-gray-600 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                    <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{question.title}</h3>
+                    <p className={`${darkMode ? "text-gray-200" : "text-gray-600"}`}>
                       {question.content.length > 150
                         ? `${question.content.substring(0, 150)}...`
                         : question.content}
@@ -593,19 +581,17 @@ const ForumModule = ({ darkMode, activeSidebarItem = "questions" }) => {
                 </div>
                 
                 <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center space-x-4">
-                    <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                      By {question.author_name}
+                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                    <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {question.author_name}
                     </span>
-                    <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                       {question.time_ago}
                     </span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                       {question.answer_count} answers
                     </span>
-                    <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                       {question.view_count} views
                     </span>
                   </div>

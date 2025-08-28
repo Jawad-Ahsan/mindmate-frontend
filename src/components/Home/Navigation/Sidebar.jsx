@@ -67,9 +67,8 @@ const Sidebar = ({
       case "forum":
         return [
           { id: "questions", icon: <MessageSquare size={18} />, label: "My Questions", action: null, active: activeSidebarItem === "questions" },
-          { id: "answers", icon: <MessageSquare size={18} />, label: "My Answers", action: null, active: activeSidebarItem === "answers" },
           { id: "bookmarks", icon: <Bookmark size={18} />, label: "Bookmarks", action: null, active: activeSidebarItem === "bookmarks" },
-          { id: "moderation", icon: <AlertCircle size={18} />, label: "Moderation", action: null, active: activeSidebarItem === "moderation" },
+          { id: "moderation", icon: <AlertCircle size={18} />, label: "Moderation", action: null, active: activeSidebarItem === "moderation" }
         ];
       case "specialists":
         return [
